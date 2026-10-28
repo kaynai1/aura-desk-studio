@@ -302,6 +302,11 @@
 #desk-studio .ds-notecolors { display: flex; gap: 4px; align-items: center; }
 #desk-studio .ds-notecolors button { width: 13px; height: 13px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--fg) 32%, transparent); }
 #desk-studio .ds-notecolors button.is-on { box-shadow: 0 0 0 2px var(--acc); }
+#desk-studio .ds-cd-num { font-size: 38px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+#desk-studio .ds-cd-num small { font-size: 14px; font-weight: 400; margin-left: 4px; }
+#desk-studio .ds-mini-input { width: 100%; height: 24px; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); padding: 0 8px; font: inherit; font-size: 11.5px; }
+#desk-studio .ds-quote-text { font-size: 14px; line-height: 1.7; }
+#desk-studio .ds-quote-author { margin-top: 6px; font-size: 11.5px; color: var(--mut); text-align: right; }
 #desk-studio[data-perf="1"] .ds-widget, #desk-studio[data-perf="1"] .ds-menubar, #desk-studio[data-perf="1"] .ds-dock, #desk-studio[data-perf="1"] .ds-studio, #desk-studio[data-perf="1"] .ds-lockscreen, #desk-studio[data-perf="1"] .ds-icedit { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
 /* ---------- adaptive tiers ---------- */
@@ -370,10 +375,10 @@
       <div class="ds-clock-date" id="ds-clock-date">—</div>
     </section>
     <section class="ds-widget cursor-interaction" id="ds-w-weather" data-w="weather" aria-label="天气小组件（演示数据）">
-      <div class="ds-w-title">天气 <span class="ds-chip">演示</span></div>
-      <div class="ds-weather-main"><i data-lucide="cloud-sun" aria-hidden="true"></i><span class="ds-weather-temp">22°</span></div>
-      <div class="ds-weather-sub">多云 · 微风 · 杭州</div>
-      <div class="ds-weather-hi">最高 26° · 最低 18°</div>
+    <div class="ds-w-title">天气 <span class="ds-chip" id="ds-w-chip">演示</span></div>
+    <div class="ds-weather-main"><span id="ds-w-iconwrap"><i data-lucide="cloud-sun" aria-hidden="true"></i></span><span class="ds-weather-temp" id="ds-w-temp">22°</span></div>
+    <div class="ds-weather-sub" id="ds-w-cond">多云 · 微风 · 杭州</div>
+    <div class="ds-weather-hi" id="ds-w-hi">最高 26° · 最低 18°</div>
     </section>
     <section class="ds-widget cursor-interaction" id="ds-w-monitor" data-w="monitor" aria-label="系统状态小组件（模拟数据）">
       <div class="ds-w-title">系统状态 <span class="ds-chip">模拟</span></div>
@@ -407,6 +412,22 @@
       <button class="ds-btn cursor-interaction" id="ds-pomo-start" type="button">开始</button>
       <button class="ds-btn cursor-interaction" id="ds-pomo-reset" type="button">重置</button>
     </div>
+  </section>
+
+  <section class="ds-widget cursor-interaction" id="ds-w-countdown" data-w="countdown" aria-label="倒计时小组件">
+    <div class="ds-w-title">倒计时</div>
+    <div class="ds-cd-num"><span id="ds-cd-num">--</span><small id="ds-cd-unit">天</small></div>
+    <div class="ds-clock-date" id="ds-cd-label">—</div>
+    <div class="ds-todo-add" style="margin-top:10px">
+      <input class="ds-mini-input" id="ds-cd-title" type="text" maxlength="10" placeholder="事项" aria-label="倒计时事项" style="flex:2">
+      <input class="ds-mini-input" id="ds-cd-date" type="date" aria-label="倒计时日期" style="flex:3">
+    </div>
+  </section>
+
+  <section class="ds-widget cursor-interaction" id="ds-w-quotes" data-w="quotes" aria-label="每日一言小组件">
+    <div class="ds-w-title">每日一言 <span style="flex:1"></span><button class="ds-todo-del cursor-interaction" id="ds-quote-next" type="button" aria-label="换一句" data-tooltip="换一句">↻</button></div>
+    <div class="ds-quote-text" id="ds-quote-text">—</div>
+    <div class="ds-quote-author" id="ds-quote-author">—</div>
   </section>
     <div class="ds-dock" id="ds-dock0" role="toolbar" aria-label="主屏 Dock"></div>
     <div class="ds-dock" id="ds-dock1" role="toolbar" aria-label="副屏 Dock"></div>
@@ -513,6 +534,13 @@
           <div class="ds-wrow"><i data-lucide="list-checks" aria-hidden="true"></i><span>待办</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="todo" aria-label="显示待办"><span></span></label></div>
           <div class="ds-wrow"><i data-lucide="sticky-note" aria-hidden="true"></i><span>便签</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="note" aria-label="显示便签"><span></span></label></div>
         <div class="ds-wrow"><i data-lucide="timer" aria-hidden="true"></i><span>番茄钟</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="pomo" aria-label="显示番茄钟"><span></span></label></div>
+        <div class="ds-wrow"><i data-lucide="hourglass" aria-hidden="true"></i><span>倒计时</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="countdown" aria-label="显示倒计时"><span></span></label></div>
+        <div class="ds-wrow"><i data-lucide="quote" aria-hidden="true"></i><span>每日一言</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="quotes" aria-label="显示每日一言"><span></span></label></div>
+        <div class="ds-flabel">天气（联网实时，桌面版/联网环境可用）</div>
+        <div class="ds-todo-add">
+          <input id="ds-wcity" type="text" placeholder="城市名，如：杭州" aria-label="天气城市">
+          <label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-wlive" aria-label="联网获取实时天气"><span></span></label>
+        </div>
         </div>
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-layout" type="button">重置布局</button>
@@ -563,6 +591,8 @@
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-factory" type="button">恢复默认设置（保留配置档）</button>
         </div>
+        <div class="ds-flabel">挂机锁屏</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="moon" aria-hidden="true"></i><span>3 分钟无操作自动锁屏</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-idlelock" aria-label="挂机自动锁屏"><span></span></label></div>
         <p class="ds-hint">快捷键：F 专注模式 · R 随机壁纸 · L 锁屏预览 · Esc 解锁</p>
       </div>
     </div>
@@ -619,10 +649,12 @@
     ],
     note: "副屏便签：在这里记点东西…\n输入会自动保存。"
   };
-  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes"].forEach(function (k) {
     DEFAULTS.widgets[k] = { on: true, x: null, y: null };
   });
   DEFAULTS.widgets.pomo.on = false;
+  DEFAULTS.widgets.countdown.on = false;
+  DEFAULTS.widgets.quotes.on = false;
 
   var S = {};
   function freshState(keepProfiles) {
@@ -640,6 +672,10 @@
     S.autoDay = false;
     S.rotate = 0;
     S.noteColor = "none";
+    S.countdown = { title: "考研", date: "2026-12-19" };
+    S.weatherCity = "杭州";
+    S.weatherLive = false;
+    S.idleLock = false;
     S.profiles = keep || [];
     S.icons = {};
     Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
@@ -685,6 +721,13 @@
       if (typeof src.autoDay === "boolean") S.autoDay = src.autoDay;
       if (src.rotate === 0 || src.rotate === 60 || src.rotate === 300) S.rotate = src.rotate;
       if (typeof src.noteColor === "string") S.noteColor = src.noteColor;
+      if (src.countdown && typeof src.countdown === "object") S.countdown = {
+        title: String(src.countdown.title || "倒计时").slice(0, 10),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(src.countdown.date || "") ? src.countdown.date : "2026-12-19"
+      };
+      if (typeof src.weatherCity === "string") S.weatherCity = src.weatherCity.slice(0, 20) || "杭州";
+      if (typeof src.weatherLive === "boolean") S.weatherLive = src.weatherLive;
+      if (typeof src.idleLock === "boolean") S.idleLock = src.idleLock;
       if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
         return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
       }).filter(function (p) { return p.snap; });
@@ -715,7 +758,8 @@
       var priv = {
         wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
-        autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor
+        autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor,
+        countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock
       };
       try {
         if (window.zcode && window.zcode.setWidgetState) {
@@ -1082,7 +1126,7 @@
 
   /* ---------------- widgets ---------------- */
   var WIDGETS = {};
-  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes"].forEach(function (k) {
     WIDGETS[k] = root.querySelector('.ds-widget[data-w="' + k + '"]');
   });
   var zTop = 10;
@@ -1147,7 +1191,7 @@
       col.forEach(function (k) { HOME_SI[k] = +si; });
     });
   });
-  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note", "pomo"];
+  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note", "pomo", "countdown", "quotes"];
   function autoBalanceLayout() {
     var rs = screenRects();
     var slots = [];
@@ -1421,6 +1465,168 @@
       box.appendChild(b);
     });
   })();
+
+  /* ---------------- countdown widget ---------------- */
+  function renderCountdown() {
+    if (!$("ds-cd-num")) return;
+    $("ds-cd-title").value = S.countdown.title;
+    $("ds-cd-date").value = S.countdown.date;
+    var target = new Date(S.countdown.date + "T00:00:00");
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (isNaN(target.getTime())) { $("ds-cd-num").textContent = "--"; $("ds-cd-unit").textContent = ""; $("ds-cd-label").textContent = "请选择日期"; return; }
+    var days = Math.round((target - today) / 86400000);
+    var label = S.countdown.title + " · " + (target.getMonth() + 1) + "月" + target.getDate() + "日";
+    if (days > 0) { $("ds-cd-num").textContent = days; $("ds-cd-unit").textContent = "天后"; }
+    else if (days === 0) { $("ds-cd-num").textContent = "就是"; $("ds-cd-unit").textContent = "今天"; }
+    else { $("ds-cd-num").textContent = -days; $("ds-cd-unit").textContent = "天前"; }
+    $("ds-cd-label").textContent = label;
+  }
+  $("ds-cd-title").addEventListener("input", function () {
+    S.countdown.title = $("ds-cd-title").value.slice(0, 10);
+    renderCountdown();
+    persist();
+  });
+  $("ds-cd-date").addEventListener("change", function () {
+    if ($("ds-cd-date").value) S.countdown.date = $("ds-cd-date").value;
+    renderCountdown();
+    persist(true);
+  });
+
+  /* ---------------- quotes widget ---------------- */
+  var QUOTES = [
+    { t: "千里之行，始于足下。", a: "老子" },
+    { t: "不积跬步，无以至千里。", a: "荀子" },
+    { t: "逝者如斯夫，不舍昼夜。", a: "孔子" },
+    { t: "路漫漫其修远兮，吾将上下而求索。", a: "屈原" },
+    { t: "会当凌绝顶，一览众山小。", a: "杜甫" },
+    { t: "长风破浪会有时，直挂云帆济沧海。", a: "李白" },
+    { t: "天生我材必有用，千金散尽还复来。", a: "李白" },
+    { t: "山重水复疑无路，柳暗花明又一村。", a: "陆游" },
+    { t: "问渠那得清如许？为有源头活水来。", a: "朱熹" },
+    { t: "纸上得来终觉浅，绝知此事要躬行。", a: "陆游" },
+    { t: "海纳百川，有容乃大。", a: "林则徐" },
+    { t: "宝剑锋从磨砺出，梅花香自苦寒来。", a: "《警世贤文》" },
+    { t: "世上无难事，只怕有心人。", a: "谚语" },
+    { t: "少壮不努力，老大徒伤悲。", a: "《长歌行》" },
+    { t: "黑发不知勤学早，白首方悔读书迟。", a: "颜真卿" },
+    { t: "业精于勤，荒于嬉。", a: "韩愈" },
+    { t: "博观而约取，厚积而薄发。", a: "苏轼" },
+    { t: "古之立大事者，不惟有超世之才，亦必有坚忍不拔之志。", a: "苏轼" },
+    { t: "生当作人杰，死亦为鬼雄。", a: "李清照" },
+    { t: "落红不是无情物，化作春泥更护花。", a: "龚自珍" },
+    { t: "苟利国家生死以，岂因祸福避趋之。", a: "林则徐" },
+    { t: "天行健，君子以自强不息。", a: "《周易》" },
+    { t: "静以修身，俭以养德。", a: "诸葛亮" },
+    { t: "非淡泊无以明志，非宁静无以致远。", a: "诸葛亮" },
+    { t: "三省吾身，谋定后动。", a: "《论语》" },
+    { t: "知之者不如好之者，好之者不如乐之者。", a: "孔子" },
+    { t: "独行快，众行远。", a: "非洲谚语" },
+    { t: "种一棵树最好的时间是十年前，其次是现在。", a: "谚语" }
+  ];
+  var quoteOverride = -1;
+  function renderQuote() {
+    var q = quoteOverride >= 0 ? QUOTES[quoteOverride % QUOTES.length] : QUOTES[Math.floor(new Date().getTime() / 86400000) % QUOTES.length];
+    $("ds-quote-text").textContent = "「" + q.t + "」";
+    $("ds-quote-author").textContent = "—— " + q.a;
+  }
+  $("ds-quote-next").addEventListener("click", function () {
+    var cur = quoteOverride >= 0 ? quoteOverride : QUOTES.indexOf(quoteOfDay());
+    quoteOverride = (cur + 1 + Math.floor(Math.random() * (QUOTES.length - 1))) % QUOTES.length;
+    renderQuote();
+  });
+  function quoteOfDay() {
+    return QUOTES[Math.floor(new Date().getTime() / 86400000) % QUOTES.length];
+  }
+
+  /* ---------------- live weather (desktop / online env) ---------------- */
+  var WMO = {
+    0: ["晴", "sun"], 1: ["大致晴", "sun"], 2: ["多云", "cloud-sun"], 3: ["阴", "cloud"],
+    45: ["雾", "cloud-fog"], 48: ["雾凇", "cloud-fog"],
+    51: ["毛毛雨", "cloud-drizzle"], 53: ["毛毛雨", "cloud-drizzle"], 55: ["毛毛雨", "cloud-drizzle"],
+    61: ["小雨", "cloud-rain"], 63: ["中雨", "cloud-rain"], 65: ["大雨", "cloud-rain"],
+    66: ["冻雨", "cloud-rain"], 67: ["冻雨", "cloud-rain"],
+    71: ["小雪", "snowflake"], 73: ["中雪", "snowflake"], 75: ["大雪", "snowflake"], 77: ["雪粒", "snowflake"],
+    80: ["阵雨", "cloud-rain"], 81: ["阵雨", "cloud-rain"], 82: ["强阵雨", "cloud-rain"],
+    85: ["阵雪", "snowflake"], 86: ["阵雪", "snowflake"],
+    95: ["雷雨", "zap"], 96: ["雷雨夹雹", "zap"], 99: ["雷雨夹雹", "zap"]
+  };
+  function setWeatherIcon(name) {
+    var wrapEl = $("ds-w-iconwrap");
+    if (!wrapEl) return;
+    wrapEl.innerHTML = '<i data-lucide="' + name + '" aria-hidden="true"></i>';
+    if (window.lucide) { try { lucide.createIcons({ attrs: { width: 16, height: 16 } }); } catch (e) {} }
+  }
+  function setWeatherChip(txt) {
+    var c = $("ds-w-chip");
+    if (c) c.textContent = txt;
+  }
+  function fallbackWeather(msg) {
+    setWeatherChip(msg || "演示");
+    $("ds-w-temp").textContent = "22°";
+    $("ds-w-cond").textContent = "多云 · 微风 · " + S.weatherCity;
+    $("ds-w-hi").textContent = "最高 26° · 最低 18°";
+    setWeatherIcon("cloud-sun");
+  }
+  var weatherBusy = false;
+  async function fetchLiveWeather() {
+    if (!S.weatherLive) { fallbackWeather("演示"); return; }
+    if (weatherBusy) return;
+    weatherBusy = true;
+    setWeatherChip("获取中…");
+    try {
+      var enc = encodeURIComponent(S.weatherCity || "杭州");
+      var geo = await (await fetch("https://geocoding-api.open-meteo.com/v1/search?name=" + enc + "&count=1&language=zh&format=json", { signal: AbortSignal.timeout(8000) })).json();
+      if (!geo.results || !geo.results.length) throw new Error("city not found");
+      var g = geo.results[0];
+      var w = await (await fetch("https://api.open-meteo.com/v1/forecast?latitude=" + g.latitude + "&longitude=" + g.longitude + "&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto", { signal: AbortSignal.timeout(8000) })).json();
+      var info = WMO[w.current.weather_code] || ["未知", "cloud"];
+      $("ds-w-temp").textContent = Math.round(w.current.temperature_2m) + "°";
+      $("ds-w-cond").textContent = info[0] + " · 风速 " + Math.round(w.current.wind_speed_10m) + "km/h · " + S.weatherCity;
+      $("ds-w-hi").textContent = "最高 " + Math.round(w.daily.temperature_2m_max[0]) + "° · 最低 " + Math.round(w.daily.temperature_2m_min[0]) + "°";
+      setWeatherIcon(info[1]);
+      setWeatherChip("实时");
+    } catch (e) {
+      fallbackWeather("演示（离线）");
+    } finally {
+      weatherBusy = false;
+    }
+  }
+  $("ds-wlive").addEventListener("change", function () {
+    S.weatherLive = $("ds-wlive").checked;
+    persist(true);
+    fetchLiveWeather();
+    if (S.weatherLive) toast("联网天气已开启，离线时自动回退演示数据");
+  });
+  var cityT = 0;
+  $("ds-wcity").addEventListener("input", function () {
+    S.weatherCity = $("ds-wcity").value.trim().slice(0, 20) || "杭州";
+    if (S.weatherLive) {
+      clearTimeout(cityT);
+      cityT = setTimeout(fetchLiveWeather, 600);
+    } else {
+      $("ds-w-cond").textContent = "多云 · 微风 · " + S.weatherCity;
+    }
+    persist();
+  });
+
+  /* ---------------- idle auto lock ---------------- */
+  var idleT = 0;
+  function resetIdle() {
+    if (idleT) { clearTimeout(idleT); idleT = 0; }
+    if (!S.idleLock) return;
+    if (lockEl && !lockEl.hidden) return;
+    idleT = setTimeout(function () { toggleLock(true); }, 3 * 60 * 1000);
+  }
+  ["pointerdown", "mousemove", "keydown", "wheel"].forEach(function (ev) {
+    window.addEventListener(ev, resetIdle, { passive: true });
+  });
+  $("ds-idlelock").addEventListener("change", function () {
+    S.idleLock = $("ds-idlelock").checked;
+    persist(true);
+    resetIdle();
+    if (S.idleLock) toast("已开启：3 分钟无操作自动锁屏");
+  });
   root.querySelectorAll("[data-ic]").forEach(function (ic) {
     ic.addEventListener("click", function (e) {
       root.querySelectorAll("[data-ic]").forEach(function (o) { o.classList.remove("is-sel"); });
@@ -1986,6 +2192,13 @@
       });
     }
     if (typeof obj.noteColor === "string") S.noteColor = obj.noteColor;
+    if (obj.countdown && typeof obj.countdown === "object") S.countdown = {
+      title: String(obj.countdown.title || "倒计时").slice(0, 10),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(obj.countdown.date || "") ? obj.countdown.date : "2026-12-19"
+    };
+    if (typeof obj.weatherCity === "string") S.weatherCity = obj.weatherCity.slice(0, 20) || "杭州";
+    if (typeof obj.weatherLive === "boolean") S.weatherLive = obj.weatherLive;
+    if (typeof obj.idleLock === "boolean") S.idleLock = obj.idleLock;
     ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
   }
 
@@ -2025,7 +2238,7 @@
 
   /* ---------------- profiles ---------------- */
   function snapshotConfig() {
-    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate, noteColor: S.noteColor }));
+    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate, noteColor: S.noteColor, countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock }));
   }
   function renderProfiles() {
     var box = $("ds-prof-list");
@@ -2087,6 +2300,7 @@
     var show = typeof force === "boolean" ? force : lockEl.hidden;
     lockEl.hidden = !show;
     if (show) updateLockTime();
+    else resetIdle();
   }
   function updateLockTime() {
     var d = new Date();
@@ -2241,6 +2455,13 @@
     renderProfiles();
     applyNoteColor();
     pomoRender();
+    renderCountdown();
+    renderQuote();
+    $("ds-wcity").value = S.weatherCity;
+    $("ds-wlive").checked = S.weatherLive;
+    if (S.weatherLive) fetchLiveWeather();
+    else fallbackWeather("演示");
+    resetIdle();
     applyDock();
     applyMotion();
     renderWalls();
