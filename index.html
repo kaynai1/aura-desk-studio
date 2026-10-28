@@ -307,6 +307,39 @@
 #desk-studio .ds-mini-input { width: 100%; height: 24px; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); padding: 0 8px; font: inherit; font-size: 11.5px; }
 #desk-studio .ds-quote-text { font-size: 14px; line-height: 1.7; }
 #desk-studio .ds-quote-author { margin-top: 6px; font-size: 11.5px; color: var(--mut); text-align: right; }
+#desk-studio .ds-noise-btns { display: flex; gap: 6px; }
+#desk-studio .ds-noise-btns button { flex: 1; height: 32px; border-radius: 9px; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; color: var(--mut); }
+#desk-studio .ds-noise-btns button svg { width: 14px; height: 14px; }
+#desk-studio .ds-noise-btns button.is-on { background: var(--acc); color: #fff; border-color: var(--acc); }
+#desk-studio .ds-favs { display: flex; flex-wrap: wrap; gap: 8px; }
+#desk-studio .ds-fav { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); padding: 0; }
+#desk-studio .ds-fav canvas { display: block; width: 56px; height: 36px; }
+#desk-studio .ds-fav .ds-fav-del { position: absolute; top: 1px; right: 1px; width: 15px; height: 15px; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 10px; line-height: 15px; text-align: center; }
+#desk-studio .ds-ctxmenu {
+  position: absolute; z-index: 85; min-width: 158px; padding: 5px;
+  border-radius: 12px;
+  background: var(--sur-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5);
+  -webkit-backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5);
+  box-shadow: var(--shadow);
+}
+#desk-studio .ds-ctxmenu button { display: flex; width: 100%; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; font-size: 12.5px; }
+#desk-studio .ds-ctxmenu button:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); }
+#desk-studio .ds-pet {
+  position: absolute; z-index: 8; width: 34px; height: 30px;
+  border-radius: 12px 12px 10px 10px;
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 62%, #fff 12%));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: left 2.6s linear, top 2.6s ease;
+}
+#desk-studio .ds-pet::before, #desk-studio .ds-pet::after { content: ""; position: absolute; top: 8px; width: 5px; height: 6px; border-radius: 50%; background: #fff; }
+#desk-studio .ds-pet::before { left: 8px; }
+#desk-studio .ds-pet::after { right: 8px; }
+#desk-studio .ds-pet.ds-pet-flip::before { left: auto; right: 8px; }
+#desk-studio .ds-pet.ds-pet-flip::after { right: auto; left: 8px; }
+@keyframes ds-pet-squash { 0% { transform: scaleY(1); } 40% { transform: scaleY(0.7); } 100% { transform: scaleY(1); } }
+#desk-studio .ds-pet.ds-squash { animation: ds-pet-squash 0.25s ease; }
 #desk-studio[data-perf="1"] .ds-widget, #desk-studio[data-perf="1"] .ds-menubar, #desk-studio[data-perf="1"] .ds-dock, #desk-studio[data-perf="1"] .ds-studio, #desk-studio[data-perf="1"] .ds-lockscreen, #desk-studio[data-perf="1"] .ds-icedit { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
 /* ---------- adaptive tiers ---------- */
@@ -429,6 +462,16 @@
     <div class="ds-quote-text" id="ds-quote-text">—</div>
     <div class="ds-quote-author" id="ds-quote-author">—</div>
   </section>
+
+  <section class="ds-widget cursor-interaction" id="ds-w-noise" data-w="noise" aria-label="白噪音小组件">
+    <div class="ds-w-title">白噪音</div>
+    <div class="ds-noise-btns" id="ds-noise-btns">
+      <button type="button" class="cursor-interaction" data-sound="rain"><i data-lucide="cloud-rain" aria-hidden="true"></i>雨声</button>
+      <button type="button" class="cursor-interaction" data-sound="waves"><i data-lucide="waves" aria-hidden="true"></i>海浪</button>
+      <button type="button" class="cursor-interaction" data-sound="fire"><i data-lucide="flame" aria-hidden="true"></i>篝火</button>
+    </div>
+    <p class="ds-hint" style="margin:8px 0 0">点击播放，再点一下停止</p>
+  </section>
     <div class="ds-dock" id="ds-dock0" role="toolbar" aria-label="主屏 Dock"></div>
     <div class="ds-dock" id="ds-dock1" role="toolbar" aria-label="副屏 Dock"></div>
   </div>
@@ -476,6 +519,11 @@
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-rand" type="button">🎲 随机一款</button>
           <button class="ds-btn ds-primary cursor-interaction" id="ds-dl" type="button">下载壁纸 PNG</button>
+        </div>
+        <div class="ds-flabel">壁纸收藏夹 <span class="ds-chip">点小图应用</span></div>
+        <div class="ds-favs" id="ds-favs"></div>
+        <div class="ds-btnrow" style="margin-top:8px">
+          <button class="ds-btn cursor-interaction" id="ds-fav-add" type="button">♥ 收藏当前壁纸</button>
         </div>
         <p class="ds-hint">「跨屏全景」会把一张壁纸无缝铺满两块屏幕；下载的 PNG 按当前屏幕比例生成，可直接分别设为两张壁纸。</p>
       </div>
@@ -536,6 +584,7 @@
         <div class="ds-wrow"><i data-lucide="timer" aria-hidden="true"></i><span>番茄钟</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="pomo" aria-label="显示番茄钟"><span></span></label></div>
         <div class="ds-wrow"><i data-lucide="hourglass" aria-hidden="true"></i><span>倒计时</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="countdown" aria-label="显示倒计时"><span></span></label></div>
         <div class="ds-wrow"><i data-lucide="quote" aria-hidden="true"></i><span>每日一言</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="quotes" aria-label="显示每日一言"><span></span></label></div>
+        <div class="ds-wrow"><i data-lucide="audio-lines" aria-hidden="true"></i><span>白噪音</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="noise" aria-label="显示白噪音"><span></span></label></div>
         <div class="ds-flabel">天气（联网实时，桌面版/联网环境可用）</div>
         <div class="ds-todo-add">
           <input id="ds-wcity" type="text" placeholder="城市名，如：杭州" aria-label="天气城市">
@@ -593,10 +642,22 @@
         </div>
         <div class="ds-flabel">挂机锁屏</div>
         <div class="ds-wrow" style="padding-top:0"><i data-lucide="moon" aria-hidden="true"></i><span>3 分钟无操作自动锁屏</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-idlelock" aria-label="挂机自动锁屏"><span></span></label></div>
+        <div class="ds-flabel">桌宠</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="cat" aria-hidden="true"></i><span>桌面底部散步的小家伙</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-pet" aria-label="桌宠"><span></span></label></div>
         <p class="ds-hint">快捷键：F 专注模式 · R 随机壁纸 · L 锁屏预览 · Esc 解锁</p>
       </div>
     </div>
   </div>
+
+  <div class="ds-ctxmenu" id="ds-ctxmenu" hidden>
+    <button type="button" class="cursor-interaction" data-act="random">🎲 随机壁纸</button>
+    <button type="button" class="cursor-interaction" data-act="fav">♥ 收藏当前壁纸</button>
+    <button type="button" class="cursor-interaction" data-act="focus">👁 专注模式</button>
+    <button type="button" class="cursor-interaction" data-act="lock">🔒 锁屏预览</button>
+    <button type="button" class="cursor-interaction" data-act="studio">⚙ 打开工坊</button>
+  </div>
+
+  <div class="ds-pet" id="ds-pet" hidden aria-label="桌宠"></div>
 
   <div class="ds-lockscreen cursor-interaction" id="ds-lock" hidden role="button" aria-label="锁屏预览，点击解锁">
     <div class="ds-lock-time" id="ds-lock-time">00:00</div>
@@ -649,12 +710,13 @@
     ],
     note: "副屏便签：在这里记点东西…\n输入会自动保存。"
   };
-  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes", "noise"].forEach(function (k) {
     DEFAULTS.widgets[k] = { on: true, x: null, y: null };
   });
   DEFAULTS.widgets.pomo.on = false;
   DEFAULTS.widgets.countdown.on = false;
   DEFAULTS.widgets.quotes.on = false;
+  DEFAULTS.widgets.noise.on = false;
 
   var S = {};
   function freshState(keepProfiles) {
@@ -676,6 +738,8 @@
     S.weatherCity = "杭州";
     S.weatherLive = false;
     S.idleLock = false;
+    S.wallFavs = [];
+    S.pet = false;
     S.profiles = keep || [];
     S.icons = {};
     Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
@@ -728,6 +792,10 @@
       if (typeof src.weatherCity === "string") S.weatherCity = src.weatherCity.slice(0, 20) || "杭州";
       if (typeof src.weatherLive === "boolean") S.weatherLive = src.weatherLive;
       if (typeof src.idleLock === "boolean") S.idleLock = src.idleLock;
+      if (Array.isArray(src.wallFavs)) S.wallFavs = src.wallFavs.slice(0, 8).filter(function (f) {
+        return f && STYLE_NAMES[f.style];
+      }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
+      if (typeof src.pet === "boolean") S.pet = src.pet;
       if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
         return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
       }).filter(function (p) { return p.snap; });
@@ -759,7 +827,8 @@
         wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
         autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor,
-        countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock
+        countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
+        wallFavs: S.wallFavs, pet: S.pet
       };
       try {
         if (window.zcode && window.zcode.setWidgetState) {
@@ -1126,7 +1195,7 @@
 
   /* ---------------- widgets ---------------- */
   var WIDGETS = {};
-  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo", "countdown", "quotes", "noise"].forEach(function (k) {
     WIDGETS[k] = root.querySelector('.ds-widget[data-w="' + k + '"]');
   });
   var zTop = 10;
@@ -1191,7 +1260,7 @@
       col.forEach(function (k) { HOME_SI[k] = +si; });
     });
   });
-  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note", "pomo", "countdown", "quotes"];
+  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note", "pomo", "countdown", "quotes", "noise"];
   function autoBalanceLayout() {
     var rs = screenRects();
     var slots = [];
@@ -1626,6 +1695,193 @@
     persist(true);
     resetIdle();
     if (S.idleLock) toast("已开启：3 分钟无操作自动锁屏");
+  });
+
+  /* ---------------- white noise widget ---------------- */
+  var audioCtx = null, noiseNodes = null, noiseKind = null;
+  function stopNoise() {
+    if (noiseNodes) {
+      try { if (noiseNodes.src) noiseNodes.src.stop(); } catch (e) {}
+      try { if (noiseNodes.lfo) noiseNodes.lfo.stop(); } catch (e) {}
+      try { audioCtx.close(); } catch (e) {}
+      audioCtx = null;
+      noiseNodes = null;
+    }
+    noiseKind = null;
+    root.querySelectorAll("#ds-noise-btns button").forEach(function (b) { b.classList.remove("is-on"); });
+  }
+  function onNoiseClick(kind) {
+    if (noiseKind === kind) { stopNoise(); return; }
+    stopNoise();
+    noiseKind = kind;
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var len = 2 * audioCtx.sampleRate;
+      var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      var i, last = 0, w;
+      if (kind === "fire") {
+        for (i = 0; i < len; i++) { w = Math.random() * 2 - 1; last = (last + 0.02 * w) / 1.02; d[i] = last * 3.2; }
+      } else {
+        for (i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      }
+      var src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      var filter = audioCtx.createBiquadFilter();
+      var gain = audioCtx.createGain();
+      var nodes = { src: src };
+      if (kind === "rain") {
+        filter.type = "bandpass"; filter.frequency.value = 1800; filter.Q.value = 0.6;
+        gain.gain.value = 0.12;
+      } else if (kind === "waves") {
+        filter.type = "lowpass"; filter.frequency.value = 420;
+        gain.gain.value = 0.1;
+        var lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
+        lfo.frequency.value = 0.09;
+        lfoGain.gain.value = 0.08;
+        lfo.connect(lfoGain);
+        lfoGain.connect(gain.gain);
+        lfo.start();
+        nodes.lfo = lfo;
+      } else {
+        filter.type = "lowpass"; filter.frequency.value = 960;
+        gain.gain.value = 0.22;
+      }
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      src.start();
+      noiseNodes = nodes;
+      var btn = root.querySelector('#ds-noise-btns button[data-sound="' + kind + '"]');
+      if (btn) btn.classList.add("is-on");
+    } catch (err) {
+      stopNoise();
+      toast("当前环境不支持音频播放");
+    }
+  }
+  root.querySelectorAll("#ds-noise-btns button").forEach(function (b) {
+    b.addEventListener("click", function () { onNoiseClick(b.dataset.sound); });
+  });
+
+  /* ---------------- wallpaper favorites ---------------- */
+  function renderFavs() {
+    var box = $("ds-favs");
+    if (!box) return;
+    box.innerHTML = "";
+    if (!S.wallFavs.length) {
+      var hint = document.createElement("p");
+      hint.className = "ds-hint";
+      hint.style.marginTop = "0";
+      hint.textContent = "空空如也，收藏一张吧";
+      box.appendChild(hint);
+      return;
+    }
+    S.wallFavs.forEach(function (f, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ds-fav cursor-interaction";
+      b.setAttribute("aria-label", "应用收藏壁纸 " + (i + 1));
+      var cv = document.createElement("canvas");
+      cv.width = 112; cv.height = 72;
+      drawWallpaper(cv.getContext("2d"), 112, 72, f);
+      var del = document.createElement("span");
+      del.className = "ds-fav-del";
+      del.textContent = "×";
+      del.setAttribute("aria-label", "删除收藏 " + (i + 1));
+      del.addEventListener("click", function (e) {
+        e.stopPropagation();
+        S.wallFavs.splice(i, 1);
+        renderFavs();
+        persist(true);
+      });
+      b.appendChild(cv);
+      b.appendChild(del);
+      b.addEventListener("click", function () {
+        var key = targetKey();
+        S.wallpaper[key].style = f.style;
+        S.wallpaper[key].hue = f.hue;
+        S.wallpaper[key].seed = f.seed;
+        S.wallpaper[key].dim = f.dim;
+        syncWallUI();
+        renderWalls();
+        renderPreviews();
+        persist(true);
+        toast("已切换到收藏的壁纸");
+      });
+      box.appendChild(b);
+    });
+  }
+  function addFav() {
+    var p = S.wallpaper[targetKey()];
+    var fav = { style: p.style, hue: p.hue, seed: p.seed, dim: p.dim };
+    var exists = S.wallFavs.some(function (f) { return f.style === fav.style && f.hue === fav.hue && f.seed === fav.seed; });
+    if (exists) { toast("这张已经在收藏夹里啦"); return; }
+    S.wallFavs.push(fav);
+    if (S.wallFavs.length > 8) S.wallFavs.shift();
+    renderFavs();
+    persist(true);
+    toast("已收藏 ♥");
+  }
+  $("ds-fav-add").addEventListener("click", addFav);
+
+  /* ---------------- desktop context menu ---------------- */
+  var ctxMenu = $("ds-ctxmenu");
+  stage.addEventListener("contextmenu", function (e) {
+    if (e.target.closest(".ds-widget, .ds-dock, .ds-studio, .ds-icedit, .ds-menubar, .ds-ctxmenu, [data-ic]")) return;
+    e.preventDefault();
+    var sr = stage.getBoundingClientRect();
+    ctxMenu.style.left = clamp(e.clientX - sr.left, 8, Math.max(8, stage.clientWidth - 170)) + "px";
+    ctxMenu.style.top = clamp(e.clientY - sr.top, 8, Math.max(8, stage.clientHeight - 200)) + "px";
+    ctxMenu.hidden = false;
+  });
+  ctxMenu.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    ctxMenu.hidden = true;
+    var act = b.dataset.act;
+    if (act === "random") $("ds-rand").click();
+    else if (act === "fav") addFav();
+    else if (act === "focus") toggleFocus();
+    else if (act === "lock") toggleLock(true);
+    else if (act === "studio") toggleStudio(true);
+  });
+  window.addEventListener("click", function (e) {
+    if (!ctxMenu.hidden && !e.target.closest("#ds-ctxmenu")) ctxMenu.hidden = true;
+  });
+
+  /* ---------------- desktop pet ---------------- */
+  var petEl = $("ds-pet"), petT = 0;
+  function applyPet() {
+    if (!petEl) return;
+    petEl.hidden = !S.pet;
+    if (petT) { clearInterval(petT); petT = 0; }
+    if (S.pet && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+      petEl.style.left = "40px";
+      petEl.style.top = (stage.clientHeight - 84) + "px";
+      petT = setInterval(petWalk, 3000);
+    }
+  }
+  function petWalk() {
+    if (petEl.hidden || stage.clientWidth < 120) return;
+    var maxX = stage.clientWidth - 64;
+    var nx = 28 + Math.random() * Math.max(24, maxX - 28);
+    var flip = nx < (parseFloat(petEl.style.left) || 0);
+    petEl.style.left = nx + "px";
+    petEl.style.top = (stage.clientHeight - 84 - Math.random() * 26) + "px";
+    petEl.classList.toggle("ds-pet-flip", flip);
+  }
+  petEl.addEventListener("click", function () {
+    petEl.classList.remove("ds-squash");
+    void petEl.offsetWidth;
+    petEl.classList.add("ds-squash");
+  });
+  $("ds-pet").addEventListener("change", function () {
+    S.pet = $("ds-pet").checked;
+    applyPet();
+    persist(true);
+    if (S.pet) toast("桌宠来啦，点它会有反应");
   });
   root.querySelectorAll("[data-ic]").forEach(function (ic) {
     ic.addEventListener("click", function (e) {
@@ -2199,6 +2455,10 @@
     if (typeof obj.weatherCity === "string") S.weatherCity = obj.weatherCity.slice(0, 20) || "杭州";
     if (typeof obj.weatherLive === "boolean") S.weatherLive = obj.weatherLive;
     if (typeof obj.idleLock === "boolean") S.idleLock = obj.idleLock;
+    if (Array.isArray(obj.wallFavs)) S.wallFavs = obj.wallFavs.slice(0, 8).filter(function (f) {
+      return f && STYLE_NAMES[f.style];
+    }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
+    if (typeof obj.pet === "boolean") S.pet = obj.pet;
     ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
   }
 
@@ -2210,7 +2470,9 @@
         version: 3,
         wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400),
-        autoDay: S.autoDay, rotate: S.rotate, icons: S.icons, noteColor: S.noteColor
+        autoDay: S.autoDay, rotate: S.rotate, icons: S.icons, noteColor: S.noteColor,
+        countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
+        wallFavs: S.wallFavs, pet: S.pet
       });
     } catch (e) {}
   }
@@ -2238,7 +2500,7 @@
 
   /* ---------------- profiles ---------------- */
   function snapshotConfig() {
-    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate, noteColor: S.noteColor, countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock }));
+    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate, noteColor: S.noteColor, countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock, wallFavs: S.wallFavs, pet: S.pet }));
   }
   function renderProfiles() {
     var box = $("ds-prof-list");
@@ -2418,6 +2680,7 @@
       if (pendingRebalance) { pendingRebalance = false; autoBalanceLayout(); }
       else clampWidgets();
       applyDock();
+      applyPet();
     }, 140);
   }
   if (window.ResizeObserver) {
@@ -2457,6 +2720,8 @@
     pomoRender();
     renderCountdown();
     renderQuote();
+    renderFavs();
+    applyPet();
     $("ds-wcity").value = S.weatherCity;
     $("ds-wlive").checked = S.weatherLive;
     if (S.weatherLive) fetchLiveWeather();
