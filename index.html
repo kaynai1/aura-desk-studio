@@ -298,6 +298,10 @@
 #desk-studio .ds-ic-glyphs button { width: 27px; height: 27px; border-radius: 8px; text-align: center; font-size: 15px; line-height: 1; border: 1px solid transparent; }
 #desk-studio .ds-ic-glyphs button.is-on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 16%, transparent); }
 #desk-studio .ds-dtile .ds-emoji { font-size: 21px; }
+#desk-studio .ds-pomo-time { font-size: 34px; font-weight: 500; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+#desk-studio .ds-notecolors { display: flex; gap: 4px; align-items: center; }
+#desk-studio .ds-notecolors button { width: 13px; height: 13px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--fg) 32%, transparent); }
+#desk-studio .ds-notecolors button.is-on { box-shadow: 0 0 0 2px var(--acc); }
 #desk-studio[data-perf="1"] .ds-widget, #desk-studio[data-perf="1"] .ds-menubar, #desk-studio[data-perf="1"] .ds-dock, #desk-studio[data-perf="1"] .ds-studio, #desk-studio[data-perf="1"] .ds-lockscreen, #desk-studio[data-perf="1"] .ds-icedit { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
 /* ---------- adaptive tiers ---------- */
@@ -390,10 +394,20 @@
       </div>
       <div class="ds-todo-list" id="ds-todo-list"></div>
     </section>
-    <section class="ds-widget cursor-interaction" id="ds-w-note" data-w="note" aria-label="便签小组件">
-      <div class="ds-w-title">便签</div>
-      <textarea class="ds-note-area" id="ds-note" maxlength="400" placeholder="在这里记点东西，会自动保存…"></textarea>
-    </section>
+  <section class="ds-widget cursor-interaction" id="ds-w-note" data-w="note" aria-label="便签小组件">
+    <div class="ds-w-title">便签 <span style="flex:1"></span><span class="ds-notecolors" id="ds-notecolors" aria-label="便签颜色"></span></div>
+    <textarea class="ds-note-area" id="ds-note" maxlength="400" placeholder="在这里记点东西，会自动保存…"></textarea>
+  </section>
+
+  <section class="ds-widget cursor-interaction" id="ds-w-pomo" data-w="pomo" aria-label="番茄钟小组件">
+    <div class="ds-w-title">番茄钟 <span class="ds-chip" id="ds-pomo-mode">专注 25 分钟</span></div>
+    <div class="ds-pomo-time" id="ds-pomo-time">25:00</div>
+    <div class="ds-m-track" style="margin-top:9px"><div class="ds-m-bar" id="ds-pomo-bar" style="width:100%"></div></div>
+    <div class="ds-btnrow" style="margin-top:10px">
+      <button class="ds-btn cursor-interaction" id="ds-pomo-start" type="button">开始</button>
+      <button class="ds-btn cursor-interaction" id="ds-pomo-reset" type="button">重置</button>
+    </div>
+  </section>
     <div class="ds-dock" id="ds-dock0" role="toolbar" aria-label="主屏 Dock"></div>
     <div class="ds-dock" id="ds-dock1" role="toolbar" aria-label="副屏 Dock"></div>
   </div>
@@ -472,6 +486,11 @@
         <input type="range" id="ds-dsize" min="40" max="64" step="1" aria-label="Dock 图标大小">
         <div class="ds-flabel">悬停放大效果</div>
         <div class="ds-wrow" style="padding-top:0"><i data-lucide="scan" aria-hidden="true"></i><span>鼠标靠近时图标放大</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-mag" aria-label="悬停放大效果"><span></span></label></div>
+        <div class="ds-flabel">真实副屏（仅桌面版）</div>
+        <div class="ds-btnrow">
+          <button class="ds-btn ds-primary cursor-interaction" id="ds-cast" type="button">📺 投送到副屏仪表盘</button>
+        </div>
+        <div class="ds-wrow" id="ds-autostart-row" hidden><i data-lucide="power" aria-hidden="true"></i><span>开机自动启动</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-autostart" aria-label="开机自动启动"><span></span></label></div>
         <div class="ds-flabel">双屏场景预设</div>
         <div class="ds-preset">
           <button type="button" class="cursor-interaction" data-preset="work">高效办公</button>
@@ -493,6 +512,7 @@
           <div class="ds-wrow"><i data-lucide="calendar-days" aria-hidden="true"></i><span>日历</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="calendar" aria-label="显示日历"><span></span></label></div>
           <div class="ds-wrow"><i data-lucide="list-checks" aria-hidden="true"></i><span>待办</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="todo" aria-label="显示待办"><span></span></label></div>
           <div class="ds-wrow"><i data-lucide="sticky-note" aria-hidden="true"></i><span>便签</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="note" aria-label="显示便签"><span></span></label></div>
+        <div class="ds-wrow"><i data-lucide="timer" aria-hidden="true"></i><span>番茄钟</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="pomo" aria-label="显示番茄钟"><span></span></label></div>
         </div>
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-layout" type="button">重置布局</button>
@@ -599,9 +619,10 @@
     ],
     note: "副屏便签：在这里记点东西…\n输入会自动保存。"
   };
-  ["clock", "weather", "monitor", "calendar", "todo", "note"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo"].forEach(function (k) {
     DEFAULTS.widgets[k] = { on: true, x: null, y: null };
   });
+  DEFAULTS.widgets.pomo.on = false;
 
   var S = {};
   function freshState(keepProfiles) {
@@ -618,6 +639,7 @@
     S.vw = 0;
     S.autoDay = false;
     S.rotate = 0;
+    S.noteColor = "none";
     S.profiles = keep || [];
     S.icons = {};
     Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
@@ -662,6 +684,7 @@
       if (typeof src.vw === "number") S.vw = clamp(src.vw, 0, 2000);
       if (typeof src.autoDay === "boolean") S.autoDay = src.autoDay;
       if (src.rotate === 0 || src.rotate === 60 || src.rotate === 300) S.rotate = src.rotate;
+      if (typeof src.noteColor === "string") S.noteColor = src.noteColor;
       if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
         return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
       }).filter(function (p) { return p.snap; });
@@ -692,7 +715,7 @@
       var priv = {
         wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
-        autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons
+        autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor
       };
       try {
         if (window.zcode && window.zcode.setWidgetState) {
@@ -1059,7 +1082,7 @@
 
   /* ---------------- widgets ---------------- */
   var WIDGETS = {};
-  ["clock", "weather", "monitor", "calendar", "todo", "note"].forEach(function (k) {
+  ["clock", "weather", "monitor", "calendar", "todo", "note", "pomo"].forEach(function (k) {
     WIDGETS[k] = root.querySelector('.ds-widget[data-w="' + k + '"]');
   });
   var zTop = 10;
@@ -1124,7 +1147,7 @@
       col.forEach(function (k) { HOME_SI[k] = +si; });
     });
   });
-  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note"];
+  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note", "pomo"];
   function autoBalanceLayout() {
     var rs = screenRects();
     var slots = [];
@@ -1333,6 +1356,71 @@
     S.note = $("ds-note").value.slice(0, 400);
     persist();
   });
+
+  /* ---------------- pomodoro widget ---------------- */
+  var pomoState = { mode: "focus", total: 25 * 60, left: 25 * 60, running: false, timer: 0 };
+  function pomoRender() {
+    if (!$("ds-pomo-time")) return;
+    $("ds-pomo-time").textContent = pad(Math.floor(pomoState.left / 60)) + ":" + pad(pomoState.left % 60);
+    $("ds-pomo-bar").style.width = Math.max(0, Math.round(pomoState.left / pomoState.total * 100)) + "%";
+    $("ds-pomo-mode").textContent = pomoState.mode === "focus" ? "专注 25 分钟" : "休息 5 分钟";
+    $("ds-pomo-start").textContent = pomoState.running ? "暂停" : "开始";
+  }
+  function pomoTick() {
+    pomoState.left--;
+    if (pomoState.left <= 0) {
+      if (pomoState.mode === "focus") {
+        pomoState.mode = "rest"; pomoState.total = 5 * 60; pomoState.left = 5 * 60;
+        toast("专注 25 分钟完成！休息一下 ☕");
+      } else {
+        pomoState.mode = "focus"; pomoState.total = 25 * 60; pomoState.left = 25 * 60;
+        toast("休息结束，开始新一轮专注 💪");
+      }
+    }
+    pomoRender();
+  }
+  $("ds-pomo-start").addEventListener("click", function () {
+    pomoState.running = !pomoState.running;
+    if (pomoState.running) {
+      if (!pomoState.timer) pomoState.timer = setInterval(pomoTick, 1000);
+    } else if (pomoState.timer) { clearInterval(pomoState.timer); pomoState.timer = 0; }
+    pomoRender();
+  });
+  $("ds-pomo-reset").addEventListener("click", function () {
+    if (pomoState.timer) { clearInterval(pomoState.timer); pomoState.timer = 0; }
+    pomoState.running = false;
+    pomoState.total = pomoState.mode === "focus" ? 25 * 60 : 5 * 60;
+    pomoState.left = pomoState.total;
+    pomoRender();
+  });
+
+  /* ---------------- note colors ---------------- */
+  var NOTE_COLORS = { none: "", yellow: "#f6d66b", pink: "#f4a8c0", blue: "#9ec5f8", green: "#a8dcc4" };
+  function applyNoteColor() {
+    var c = NOTE_COLORS[S.noteColor] || "";
+    var el = WIDGETS.note;
+    if (el) el.style.backgroundColor = c ? "color-mix(in srgb, " + c + " 38%, transparent)" : "";
+    root.querySelectorAll("#ds-notecolors button").forEach(function (b) {
+      b.classList.toggle("is-on", b.dataset.c === S.noteColor);
+    });
+  }
+  (function buildNoteColors() {
+    var box = $("ds-notecolors");
+    Object.keys(NOTE_COLORS).forEach(function (key) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "cursor-interaction";
+      b.dataset.c = key;
+      b.style.background = NOTE_COLORS[key] || "transparent";
+      b.setAttribute("aria-label", key === "none" ? "便签颜色：跟随主题" : "便签颜色 " + key);
+      b.addEventListener("click", function () {
+        S.noteColor = key;
+        applyNoteColor();
+        persist(true);
+      });
+      box.appendChild(b);
+    });
+  })();
   root.querySelectorAll("[data-ic]").forEach(function (ic) {
     ic.addEventListener("click", function (e) {
       root.querySelectorAll("[data-ic]").forEach(function (o) { o.classList.remove("is-sel"); });
@@ -1849,6 +1937,28 @@
     persist(true);
   });
 
+  /* real second-screen cast + autostart (desktop app only) */
+  var isDesktopApp = !!(window.aura && window.aura.isDesktop);
+  var castBtn = $("ds-cast");
+  if (castBtn) {
+    castBtn.addEventListener("click", async function () {
+      if (!window.aura) { toast("此功能仅 Windows 桌面版支持"); return; }
+      try {
+        var r = await window.aura.castSecond();
+        toast(r && r.ok ? "已投送到副屏，按副屏内 Esc 退出" : ((r && r.msg) || "投送失败"));
+      } catch (err) { toast("投送失败"); }
+    });
+  }
+  if (isDesktopApp) {
+    $("ds-autostart-row").hidden = false;
+    window.aura.getLoginItem().then(function (v) {
+      $("ds-autostart").checked = !!(v && v.openAtLogin);
+    }).catch(function () {});
+    $("ds-autostart").addEventListener("change", function () {
+      window.aura.setLoginItem($("ds-autostart").checked).catch(function () {});
+    });
+  }
+
   function mergeConfig(obj) {
     if (!obj || typeof obj !== "object") return;
     if (obj.wallpaper) mergeWp(obj.wallpaper, S.wallpaper);
@@ -1865,6 +1975,7 @@
     if (typeof obj.note === "string") S.note = obj.note.slice(0, 400);
     if (typeof obj.autoDay === "boolean") S.autoDay = obj.autoDay;
     if (obj.rotate === 0 || obj.rotate === 60 || obj.rotate === 300) S.rotate = obj.rotate;
+    if (typeof obj.noteColor === "string") S.noteColor = obj.noteColor;
     if (Array.isArray(obj.profiles)) S.profiles = obj.profiles.slice(0, 4).map(function (p) {
       return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
     }).filter(function (p) { return p.snap; });
@@ -1874,6 +1985,7 @@
         if (v && typeof v === "object") S.icons[k] = { label: String(v.label || "").slice(0, 12), emoji: typeof v.emoji === "string" ? v.emoji.slice(0, 4) : "", off: !!v.off };
       });
     }
+    if (typeof obj.noteColor === "string") S.noteColor = obj.noteColor;
     ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
   }
 
@@ -1885,7 +1997,7 @@
         version: 3,
         wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400),
-        autoDay: S.autoDay, rotate: S.rotate, icons: S.icons
+        autoDay: S.autoDay, rotate: S.rotate, icons: S.icons, noteColor: S.noteColor
       });
     } catch (e) {}
   }
@@ -1913,7 +2025,7 @@
 
   /* ---------------- profiles ---------------- */
   function snapshotConfig() {
-    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate }));
+    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate, noteColor: S.noteColor }));
   }
   function renderProfiles() {
     var box = $("ds-prof-list");
@@ -2127,6 +2239,8 @@
     pendingRebalance = false;
     renderIcons();
     renderProfiles();
+    applyNoteColor();
+    pomoRender();
     applyDock();
     applyMotion();
     renderWalls();
@@ -2162,7 +2276,7 @@
 (function(){
   function swap(){
     if (window.lucide && window.lucide.createIcons) { window.lucide.createIcons({attrs:{width:16,height:16}}); return; }
-    var MAP={compass:"🧭",mail:"✉️",music:"🎵",image:"🖼️","calendar-days":"📅",terminal:"⌨️",settings:"⚙️","trash-2":"🗑️",wifi:"📶","volume-2":"🔊","battery-medium":"🔋","cloud-sun":"⛅",monitor:"🖥️",folder:"📁",clock:"🕐",activity:"📊","list-checks":"✅","sticky-note":"📝",scan:"✨","eye-off":"🙈","sun-moon":"🌓",waves:"🌊",lock:"🔒"};
+    var MAP={compass:"🧭",mail:"✉️",music:"🎵",image:"🖼️","calendar-days":"📅",terminal:"⌨️",settings:"⚙️","trash-2":"🗑️",wifi:"📶","volume-2":"🔊","battery-medium":"🔋","cloud-sun":"⛅",monitor:"🖥️",folder:"📁",clock:"🕐",activity:"📊","list-checks":"✅","sticky-note":"📝",scan:"✨","eye-off":"🙈","sun-moon":"🌓",waves:"🌊",lock:"🔒",timer:"⏱️",power:"🔌",zap:"⚡"};
     document.querySelectorAll("i[data-lucide]").forEach(function(el){
       var s=document.createElement("span");
       s.className="ds-emoji";

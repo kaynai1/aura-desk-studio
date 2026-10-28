@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AURA 副屏仪表盘</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #eef1f8;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1b1f33 0%, #141827 55%, #221a33 100%);
+  }
+  .glow { position: fixed; border-radius: 50%; filter: blur(90px); opacity: .35; animation: drift 26s ease-in-out infinite alternate; }
+  .glow.a { width: 46vw; height: 46vw; left: -10vw; top: -14vw; background: #4d5fd6; }
+  .glow.b { width: 38vw; height: 38vw; right: -8vw; bottom: -12vw; background: #8b5fd6; animation-delay: -13s; }
+  @keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(6vw, 4vw) scale(1.15); } }
+  .wrap { position: relative; text-align: center; z-index: 1; }
+  .time { font-size: clamp(120px, 22vw, 300px); font-weight: 200; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; text-shadow: 0 6px 60px rgba(0,0,0,.45); }
+  .date { font-size: clamp(20px, 3vw, 34px); color: rgba(238,241,248,.85); margin-top: 12px; }
+  .todo { margin-top: 5vh; display: inline-block; text-align: left; background: rgba(16,18,30,.55); border: 1px solid rgba(255,255,255,.14); border-radius: 18px; padding: 22px 30px; min-width: 340px; backdrop-filter: blur(8px); }
+  .todo h2 { font-size: 15px; font-weight: 500; color: rgba(238,241,248,.6); letter-spacing: .12em; margin-bottom: 12px; }
+  .todo .item { display: flex; align-items: center; gap: 10px; font-size: 17px; padding: 6px 0; }
+  .todo .tick { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid rgba(238,241,248,.5); flex: none; position: relative; }
+  .todo .item.done .tick { background: #7aa2ff; border-color: #7aa2ff; }
+  .todo .item.done .tick::after { content: ""; position: absolute; left: 4.5px; top: 2px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .todo .item.done .text { opacity: .45; text-decoration: line-through; }
+  .note { margin-top: 3vh; font-size: 15px; color: rgba(238,241,248,.55); white-space: pre-wrap; max-width: 60vw; margin-left: auto; margin-right: auto; }
+  .hint { position: fixed; bottom: 22px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(238,241,248,.4); }
+  .empty { color: rgba(238,241,248,.45); font-size: 15px; }
+</style>
+</head>
+<body>
+  <div class="glow a"></div>
+  <div class="glow b"></div>
+  <div class="wrap">
+    <div class="time" id="t">--:--</div>
+    <div class="date" id="d">—</div>
+    <div class="todo" id="todoBox"><h2>待办 · TODO</h2><div id="todoList"></div></div>
+    <div class="note" id="noteBox"></div>
+  </div>
+  <div class="hint">Esc 退出 · AURA 双屏工坊</div>
+<script>
+  var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function readCfg() {
+    try { return JSON.parse(localStorage.getItem("aura-desk-cfg") || "null"); } catch (e) { return null; }
+  }
+  function renderTodo() {
+    var cfg = readCfg();
+    var list = document.getElementById("todoList");
+    list.innerHTML = "";
+    var todo = cfg && cfg.privateContent && Array.isArray(cfg.privateContent.todo) ? cfg.privateContent.todo : [];
+    var shown = todo.slice(0, 5);
+    if (!shown.length) {
+      var e = document.createElement("div");
+      e.className = "empty";
+      e.textContent = "在主屏添加待办，这里会同步显示";
+      list.appendChild(e);
+      return;
+    }
+    shown.forEach(function (t) {
+      var item = document.createElement("div");
+      item.className = "item" + (t.done ? " done" : "");
+      item.innerHTML = '<span class="tick"></span><span class="text"></span>';
+      item.querySelector(".text").textContent = t.text;
+      list.appendChild(item);
+    });
+  }
+  function renderNote() {
+    var cfg = readCfg();
+    var note = cfg && cfg.privateContent ? String(cfg.privateContent.note || "") : "";
+    document.getElementById("noteBox").textContent = note;
+    document.getElementById("noteBox").style.display = note ? "" : "none";
+  }
+  function tick() {
+    var d = new Date();
+    document.getElementById("t").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    document.getElementById("d").textContent = d.getFullYear() + " 年 " + (d.getMonth() + 1) + " 月 " + d.getDate() + " 日 · " + WEEK[d.getDay()];
+  }
+  tick();
+  renderTodo();
+  renderNote();
+  setInterval(tick, 1000);
+  setInterval(function () { renderTodo(); renderNote(); }, 5000);
+  window.addEventListener("keydown", function (e) { if (e.key === "Escape") window.close(); });
+</script>
+</body>
+</html>

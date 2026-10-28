@@ -18,7 +18,9 @@
     "productName": "AURA双屏工坊",
     "files": [
       "main.js",
+      "preload.js",
       "index.html",
+      "dashboard.html",
       "lucide.min.js",
       "package.json"
     ],
