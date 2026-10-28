@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld("aura", {
   applyWallpaper: function (dataUrl) { return ipcRenderer.invoke("aura:apply-wallpaper", dataUrl); },
   setIgnoreMouseEvents: function (flag, opts) { return ipcRenderer.invoke("aura:set-ignore-mouse", flag, opts); },
   hideOverlays: function () { return ipcRenderer.invoke("aura:hide-overlays"); },
-  showOverlays: function () { return ipcRenderer.invoke("aura:show-overlays"); }
+  showOverlays: function () { return ipcRenderer.invoke("aura:show-overlays"); },
+  onDisplaysChanged: function (cb) { ipcRenderer.on("aura:displays-changed", cb); }
 });

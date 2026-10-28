@@ -2761,6 +2761,12 @@
     if (S.autoApply) applyRealWallpaper();
     else $("ds-apply-status").textContent = "自动应用已关闭";
   });
+  if (window.aura && window.aura.onDisplaysChanged) {
+    window.aura.onDisplaysChanged(function () {
+      if (S.autoApply !== false) applyRealWallpaper();
+      toast("显示器配置变化，已重新适配 ✓");
+    });
+  }
   window.addEventListener("storage", function (e) {
     if (e.key !== "aura-desk-cfg" || !e.newValue) return;
     try {

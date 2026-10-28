@@ -34,8 +34,8 @@
   .todo-item:hover { background: rgba(238,241,248,.08); }
   .tick { flex: none; width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(238,241,248,.5); position: relative; }
   .item-done .tick { background: var(--acc, #7aa2ff); border-color: var(--acc, #7aa2ff); }
-  .item-done .tick::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-  .item-done .txt { opacity: .5; text-decoration: line-through; }
+  .item-done .tick::after { content: ""; position: absolute; left: 4px; top: 2px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .item-done .txt { opacity: .45; text-decoration: line-through; }
   .todo-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .note-area { width: 100%; height: 96px; resize: none; border: 0; background: transparent; color: #eef1f8; font: inherit; font-size: 12.5px; line-height: 1.55; padding: 0; outline: none; }
   .note-area::placeholder { color: rgba(238,241,248,.4); }
@@ -51,31 +51,11 @@
 </style>
 </head>
 <body>
-  <div class="ov-card" id="c-clock" style="left:40px;top:60px">
-    <div class="ov-title"><span class="dot"></span><span>时钟</span></div>
-    <div class="clock-time" id="t">--:--</div>
-    <div class="clock-date" id="d">—</div>
-  </div>
-  <div class="ov-card" id="c-todo" style="left:40px;top:250px">
-    <div class="ov-title"><span class="dot"></span><span>待办</span></div>
-    <div class="todo-add"><input id="todoIn" placeholder="添加待办…" maxlength="80"><button id="todoAdd">添加</button></div>
-    <div class="todo-list" id="todoList"></div>
-  </div>
-  <div class="ov-card" id="c-note" style="left:40px;top:520px">
-    <div class="ov-title"><span class="dot"></span><span>便签</span></div>
-    <textarea class="note-area" id="noteArea" placeholder="写在真实桌面上…" maxlength="400"></textarea>
-  </div>
-  <div class="ov-card" id="c-countdown" style="left:320px;top:60px">
-    <div class="ov-title"><span class="dot"></span><span>倒计时</span></div>
-    <div class="cd-num"><span id="cdNum">--</span><small id="cdUnit">天</small></div>
-    <div class="cd-label" id="cdLabel">—</div>
-    <div class="cd-edit"><input class="t" id="cdT" maxlength="10" placeholder="事项"><input class="d" id="cdD" type="date"></div>
-  </div>
-  <div class="ov-card" id="c-quotes" style="left:320px;top:280px">
-    <div class="ov-title"><span class="dot"></span><span>每日一言</span><button class="quote-refresh" id="qNext">换一句 ↻</button></div>
-    <div class="quote-text" id="qText">—</div>
-    <div class="quote-author" id="qAuthor">—</div>
-  </div>
+  <div class="ov-card" id="c-clock"><div class="ov-title"><span class="dot"></span><span>时钟</span></div><div class="clock-time" id="t">--:--</div><div class="clock-date" id="d">—</div></div>
+  <div class="ov-card" id="c-countdown"><div class="ov-title"><span class="dot"></span><span>倒计时</span></div><div class="cd-num"><span id="cdNum">--</span><small id="cdUnit">天</small></div><div class="cd-label" id="cdLabel">—</div><div class="cd-edit"><input class="t" id="cdT" maxlength="10" placeholder="事项"><input class="d" id="cdD" type="date"></div></div>
+  <div class="ov-card" id="c-todo"><div class="ov-title"><span class="dot"></span><span>待办</span></div><div class="todo-add"><input id="todoIn" placeholder="添加待办…" maxlength="80"><button id="todoAdd">添加</button></div><div class="todo-list" id="todoList"></div></div>
+  <div class="ov-card" id="c-note"><div class="ov-title"><span class="dot"></span><span>便签</span></div><textarea class="note-area" id="noteArea" placeholder="写在真实桌面上…" maxlength="400"></textarea></div>
+  <div class="ov-card" id="c-quotes"><div class="ov-title"><span class="dot"></span><span>每日一言</span><button class="quote-refresh" id="qNext">换一句 ↻</button></div><div class="quote-text" id="qText">—</div><div class="quote-author" id="qAuthor">—</div></div>
 <script>
   var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   var QUOTES = [
@@ -192,6 +172,48 @@
     qIdx = (qIdx + 1) % QUOTES.length;
     renderQuote();
   });
+  /* ---- adaptive per-display layout ---- */
+  var dispSig = "unknown";
+  function posKey() { return "aura-overlay-pos-" + dispSig; }
+  function defaultLayout(w, h) {
+    var ids = ["c-clock", "c-countdown", "c-todo", "c-note", "c-quotes"];
+    var portrait = h > w;
+    var ultrawide = w / h >= 2;
+    var cols = portrait ? 1 : (ultrawide ? 3 : 2);
+    var colW = 232;
+    var marginX = Math.max(24, Math.round(w * 0.03));
+    var top = Math.max(30, Math.round(h * 0.05));
+    var gap = 18;
+    var colX = [];
+    if (cols === 1) colX.push(Math.max(24, Math.round((w - colW) / 2)));
+    else if (cols === 2) { colX.push(marginX); colX.push(w - colW - marginX); }
+    else { colX.push(marginX); colX.push(Math.round(w / 2 - colW / 2)); colX.push(w - colW - marginX); }
+    var buckets = [];
+    for (var c = 0; c < cols; c++) buckets.push([]);
+    ids.forEach(function (id, i) { buckets[i % cols].push(id); });
+    buckets.forEach(function (bucket, ci) {
+      var y = top;
+      bucket.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.left = colX[ci] + "px";
+        el.style.top = y + "px";
+        y += el.offsetHeight + gap;
+      });
+    });
+  }
+  function restoreLayout() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(posKey()) || "null");
+      if (!saved) { defaultLayout(stageW(), stageH()); return; }
+      Object.keys(saved).forEach(function (id) {
+        var c = document.getElementById(id);
+        if (c) { c.style.left = saved[id].left; c.style.top = saved[id].top; }
+      });
+    } catch (e) { defaultLayout(stageW(), stageH()); }
+  }
+  function stageW() { return window.innerWidth || 1920; }
+  function stageH() { return window.innerHeight || 1080; }
   /* ---- drag ---- */
   (function () {
     var drag = null;
@@ -199,7 +221,7 @@
       var title = e.target.closest(".ov-title");
       if (!title) return;
       var card = title.closest(".ov-card");
-      drag = { el: card, sx: e.clientX, sy: e.clientY, ox: parseFloat(card.style.left), oy: parseFloat(card.style.top) };
+      drag = { el: card, sx: e.clientX, sy: e.clientY, ox: parseFloat(card.style.left) || 0, oy: parseFloat(card.style.top) || 0 };
       e.preventDefault();
     });
     document.addEventListener("pointermove", function (e) {
@@ -209,20 +231,11 @@
     });
     document.addEventListener("pointerup", function () {
       if (!drag) return;
-      localStorage.setItem("aura-overlay-pos", JSON.stringify((function () {
-        var all = {};
-        document.querySelectorAll(".ov-card").forEach(function (c) { all[c.id] = { left: c.style.left, top: c.style.top }; });
-        return all;
-      })()));
+      var all = {};
+      document.querySelectorAll(".ov-card").forEach(function (c) { all[c.id] = { left: c.style.left, top: c.style.top }; });
+      try { localStorage.setItem(posKey(), JSON.stringify(all)); } catch (e) {}
       drag = null;
     });
-    try {
-      var saved = JSON.parse(localStorage.getItem("aura-overlay-pos") || "null");
-      if (saved) Object.keys(saved).forEach(function (id) {
-        var c = document.getElementById(id);
-        if (c) { c.style.left = saved[id].left; c.style.top = saved[id].top; }
-      });
-    } catch (e) {}
   })();
   /* ---- click-through management ---- */
   var ignoreT = 0;
@@ -234,14 +247,14 @@
       } catch (err) {}
     }, 60);
   });
-  /* ---- cross-window sync + boot ---- */
+  /* ---- cross-window sync ---- */
   window.addEventListener("storage", function (e) {
-    if (e.key === "aura-desk-cfg") { loadTodo(); loadNote(); }
+    if (e.key === "aura-desk-cfg") { loadTodo(); loadNote(); if (priv().countdown) { cd = { title: priv().countdown.title || "倒计时", date: priv().countdown.date || "" }; document.getElementById("cdD").value = cd.date; renderCd(); } }
   });
+  /* ---- boot ---- */
   (function boot() {
     var p = priv();
-    if (p.countdown) cd = { title: p.countdown.title || "倒计时", date: p.countdown.date || "" };
-    if (cd.date) document.getElementById("cdD").value = cd.date;
+    if (p.countdown) { cd = { title: p.countdown.title || "倒计时", date: p.countdown.date || "" }; document.getElementById("cdD").value = cd.date; }
     loadTodo();
     loadNote();
     renderCd();
@@ -249,6 +262,17 @@
     tick();
     setInterval(tick, 1000);
     setInterval(loadTodo, 5000);
+    var qs = new URLSearchParams(location.search);
+    var dIdx = parseInt(qs.get("display") || "0", 10) || 0;
+    if (window.aura && window.aura.getDisplays) {
+      window.aura.getDisplays().then(function (disps) {
+        var d = disps[dIdx] || disps[0] || { bounds: { x: 0, y: 0, width: 1920, height: 1080 } };
+        dispSig = d.bounds.width + "x" + d.bounds.height + "@" + d.bounds.x + "," + d.bounds.y;
+        restoreLayout();
+      }).catch(function () { defaultLayout(stageW(), stageH()); });
+    } else {
+      defaultLayout(stageW(), stageH());
+    }
   })();
   window.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && window.aura) window.aura.hideOverlays();

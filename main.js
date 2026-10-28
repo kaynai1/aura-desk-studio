@@ -4,9 +4,10 @@ const fs = require("fs");
 const { execFile } = require("child_process");
 
 let castWin = null;
-let overlayWin = null;
+let overlayWins = [];
 let tray = null;
 let quitting = false;
+let displayDebounce = 0;
 
 /* ---------- 16x16 tray icon drawn from raw BGRA pixels ---------- */
 function makeTrayIcon() {
@@ -16,10 +17,10 @@ function makeTrayIcon() {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
       const t = (x + y) / (size * 2 - 2);
-      buf[i] = Math.round(255 * (0.35 + 0.25 * t));     // B
-      buf[i + 1] = Math.round(200 * (0.4 + 0.3 * t));   // G
-      buf[i + 2] = Math.round(140 + 100 * t);           // R
-      buf[i + 3] = 255;                                  // A
+      buf[i] = Math.round(255 * (0.35 + 0.25 * t));
+      buf[i + 1] = Math.round(200 * (0.4 + 0.3 * t));
+      buf[i + 2] = Math.round(140 + 100 * t);
+      buf[i + 3] = 255;
     }
   }
   return nativeImage.createFromBitmap(buf, { width: size, height: size });
@@ -31,8 +32,9 @@ function createTray() {
     tray.setToolTip("AURA 双屏工坊");
     const menu = Menu.buildFromTemplate([
       { label: "显示控制台", click: function () { showStudio(); } },
-      { label: "显示桌面小组件", click: function () { createOverlay(); } },
+      { label: "显示所有桌面小组件", click: function () { createOverlays(); } },
       { label: "隐藏桌面小组件", click: function () { hideOverlays(); } },
+      { label: "重新应用壁纸", click: function () { notifyDisplaysChanged(); } },
       { type: "separator" },
       { label: "退出", click: function () { quitting = true; app.quit(); } }
     ]);
@@ -42,7 +44,9 @@ function createTray() {
 }
 
 function showStudio() {
-  const wins = BrowserWindow.getAllWindows().filter(function (w) { return !w.isDestroyed() && w.webContents.getURL().indexOf("index.html") >= 0; });
+  const wins = BrowserWindow.getAllWindows().filter(function (w) {
+    return !w.isDestroyed() && w.webContents.getURL().indexOf("index.html") >= 0;
+  });
   if (wins.length) { wins[0].show(); wins[0].focus(); return; }
   createWindow();
 }
@@ -66,44 +70,46 @@ function createWindow() {
   Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, "index.html"));
   win.on("close", function (e) {
-    if (!quitting && tray) {
-      e.preventDefault();
-      win.hide();
-    }
+    if (!quitting && tray) { e.preventDefault(); win.hide(); }
   });
 }
 
-/* ---------- transparent desktop widgets overlay ---------- */
-function createOverlay() {
-  if (overlayWin && !overlayWin.isDestroyed()) { overlayWin.show(); return; }
-  const primary = screen.getPrimaryDisplay();
-  overlayWin = new BrowserWindow({
-    x: primary.bounds.x,
-    y: primary.bounds.y,
-    width: primary.bounds.width,
-    height: primary.bounds.height,
-    frame: false,
-    transparent: true,
-    resizable: false,
-    movable: false,
-    skipTaskbar: true,
-    hasShadow: false,
-    alwaysOnTop: true,
-    zIndex: 5,
-    backgroundColor: "#00000000",
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, "preload.js")
-    }
+/* ---------- transparent widget overlays on EVERY display ---------- */
+function createOverlays() {
+  hideOverlays();
+  overlayWins = [];
+  screen.getAllDisplays().forEach(function (d, i) {
+    const w = new BrowserWindow({
+      x: d.bounds.x,
+      y: d.bounds.y,
+      width: d.bounds.width,
+      height: d.bounds.height,
+      frame: false,
+      transparent: true,
+      resizable: false,
+      movable: false,
+      skipTaskbar: true,
+      hasShadow: false,
+      alwaysOnTop: true,
+      backgroundColor: "#00000000",
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        preload: path.join(__dirname, "preload.js")
+      }
+    });
+    w.setIgnoreMouseEvents(true, { forward: true });
+    w.loadFile(path.join(__dirname, "widgets.html"), { query: { display: String(i) } });
+    w.on("closed", function () {
+      overlayWins = overlayWins.filter(function (o) { return o !== w; });
+    });
+    overlayWins.push(w);
   });
-  overlayWin.setIgnoreMouseEvents(true, { forward: true });
-  overlayWin.loadFile(path.join(__dirname, "widgets.html"));
-  overlayWin.on("closed", function () { overlayWin = null; });
 }
 
 function hideOverlays() {
-  if (overlayWin && !overlayWin.isDestroyed()) overlayWin.hide();
+  overlayWins.forEach(function (w) { if (!w.isDestroyed()) w.close(); });
+  overlayWins = [];
 }
 
 /* ---------- second-screen dashboard ---------- */
@@ -117,10 +123,7 @@ function createDashboard(second) {
     autoHideMenuBar: true,
     backgroundColor: "#10131c",
     title: "AURA 副屏仪表盘",
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false
-    }
+    webPreferences: { contextIsolation: true, nodeIntegration: false }
   });
   castWin.loadFile(path.join(__dirname, "dashboard.html"));
   castWin.on("closed", function () { castWin = null; });
@@ -140,6 +143,12 @@ function applyRealWallpaper(dataUrl, callback) {
   const encoded = Buffer.from(script, "utf16le").toString("base64");
   execFile("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], function (err) {
     callback(err);
+  });
+}
+
+function notifyDisplaysChanged() {
+  BrowserWindow.getAllWindows().forEach(function (w) {
+    try { w.webContents.send("aura:displays-changed"); } catch (e) {}
   });
 }
 
@@ -185,12 +194,24 @@ ipcMain.handle("aura:set-ignore-mouse", function (e, flag, opts) {
 });
 
 ipcMain.handle("aura:hide-overlays", function () { hideOverlays(); return true; });
-ipcMain.handle("aura:show-overlays", function () { createOverlay(); return true; });
+ipcMain.handle("aura:show-overlays", function () { createOverlays(); return true; });
+
+/* ---------- display hot-plug / resolution change ---------- */
+function onDisplayChanged() {
+  clearTimeout(displayDebounce);
+  displayDebounce = setTimeout(function () {
+    createOverlays();
+    notifyDisplaysChanged();
+  }, 600);
+}
+["display-added", "display-removed", "display-metrics-changed"].forEach(function (ev) {
+  screen.on(ev, onDisplayChanged);
+});
 
 /* ---------- lifecycle ---------- */
 app.whenReady().then(function () {
   createWindow();
-  createOverlay();
+  createOverlays();
   createTray();
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().filter(function (w) { return w.isVisible(); }).length === 0) showStudio();
