@@ -640,6 +640,9 @@
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-factory" type="button">恢复默认设置（保留配置档）</button>
         </div>
+        <div class="ds-flabel">内存</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="memory-stick" aria-hidden="true"></i><span>内存优化（壁纸 1:1 渲染，后台减半）</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-memsave" aria-label="内存优化"><span></span></label></div>
+        <p class="ds-hint" id="ds-mem-est">壁纸画布内存估算中…</p>
         <div class="ds-flabel">挂机锁屏</div>
         <div class="ds-wrow" style="padding-top:0"><i data-lucide="moon" aria-hidden="true"></i><span>3 分钟无操作自动锁屏</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-idlelock" aria-label="挂机自动锁屏"><span></span></label></div>
         <div class="ds-flabel">桌宠</div>
@@ -740,6 +743,7 @@
     S.idleLock = false;
     S.wallFavs = [];
     S.pet = false;
+    S.memSave = true;
     S.profiles = keep || [];
     S.icons = {};
     Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
@@ -796,6 +800,7 @@
         return f && STYLE_NAMES[f.style];
       }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
       if (typeof src.pet === "boolean") S.pet = src.pet;
+      if (typeof src.memSave === "boolean") S.memSave = src.memSave;
       if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
         return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
       }).filter(function (p) { return p.snap; });
@@ -828,7 +833,7 @@
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
         autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor,
         countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
-        wallFavs: S.wallFavs, pet: S.pet
+        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave
       };
       try {
         if (window.zcode && window.zcode.setWidgetState) {
@@ -1029,16 +1034,21 @@
     return { H: Math.round(H), H1: Math.round(H1), w0: w0, w1: w1, x0: x0, x1: x1, y0: y0, y1: y1, secondOn: secondOn, stacked: stacked, stageH: stageH };
   }
 
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function wallQuality() {
+    if (document.hidden) return 0.5;
+    if (S.memSave) return 1;
+    return Math.min(window.devicePixelRatio || 1, 2);
+  }
   function drawSlice(canvas, m, si) {
     var overscan = 22;
     var cx = si === 0 ? m.x0 : m.x1;
     var cw = (si === 0 ? m.w0 : m.w1) + overscan * 2;
     var chh = (si === 0 ? m.H : (m.H1 || m.H)) + overscan * 2;
-    canvas.width = Math.max(2, Math.round(cw * dpr));
-    canvas.height = Math.max(2, Math.round(chh * dpr));
+    var q = wallQuality();
+    canvas.width = Math.max(2, Math.round(cw * q));
+    canvas.height = Math.max(2, Math.round(chh * q));
     var ctx = canvas.getContext("2d");
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.setTransform(q, 0, 0, q, 0, 0);
     var span = S.wallpaper.span.on && m.secondOn;
     var params = span ? S.wallpaper.span : S.wallpaper[si === 0 ? "main" : "second"];
     if (span) {
@@ -1058,10 +1068,21 @@
     canvas.setAttribute("aria-label", (si === 0 ? "主屏" : "副屏") + "壁纸：" + (span ? "跨屏全景·" : "") + (STYLE_NAMES[params.style] || params.style) + "风格");
     updateFx(canvas, m, si, params);
   }
+  function wallMemMB() {
+    var total = 0;
+    [wall0, wall1].forEach(function (c) { total += c.width * c.height * 4; });
+    fxControllers.forEach(function (c) { if (c.base) total += c.base.width * c.base.height * 4; });
+    return Math.round(total / 1048576 * 10) / 10;
+  }
+  function updateMemEstimate() {
+    var est = $("ds-mem-est");
+    if (est) est.textContent = "壁纸画布内存 ≈ " + wallMemMB() + " MB" + (document.hidden ? "（后台已减半）" : (S.memSave ? "（1:1 渲染）" : "（高清渲染）"));
+  }
   function renderWalls() {
     var m = metrics();
     drawSlice(wall0, m, 0);
     if (m.secondOn) drawSlice(wall1, m, 1);
+    updateMemEstimate();
   }
 
   function renderPreviews() {
@@ -1336,6 +1357,7 @@
       WIDGETS[k].hidden = !S.widgets[k].on;
       var t = root.querySelector('[data-wtoggle="' + k + '"]');
       if (t) t.checked = S.widgets[k].on;
+      if (k === "noise" && !S.widgets[k].on) stopNoise();
     });
   }
   function setWidgetOn(k, on) {
@@ -1425,6 +1447,7 @@
   }
   var monVals = { cpu: 34, ram: 52, net: 28 };
   function tickMonitor() {
+    if (document.hidden) return;
     ["cpu", "ram", "net"].forEach(function (k) {
       monVals[k] = clamp(monVals[k] + (Math.random() - 0.5) * 16, 8, 92);
       $("ds-m-" + k).style.width = monVals[k].toFixed(0) + "%";
@@ -1471,7 +1494,7 @@
   });
 
   /* ---------------- pomodoro widget ---------------- */
-  var pomoState = { mode: "focus", total: 25 * 60, left: 25 * 60, running: false, timer: 0 };
+  var pomoState = { mode: "focus", total: 25 * 60, left: 25 * 60, running: false, timer: 0, endAt: 0 };
   function pomoRender() {
     if (!$("ds-pomo-time")) return;
     $("ds-pomo-time").textContent = pad(Math.floor(pomoState.left / 60)) + ":" + pad(pomoState.left % 60);
@@ -1480,7 +1503,7 @@
     $("ds-pomo-start").textContent = pomoState.running ? "暂停" : "开始";
   }
   function pomoTick() {
-    pomoState.left--;
+    if (pomoState.running) pomoState.left = Math.max(0, Math.round((pomoState.endAt - Date.now()) / 1000));
     if (pomoState.left <= 0) {
       if (pomoState.mode === "focus") {
         pomoState.mode = "rest"; pomoState.total = 5 * 60; pomoState.left = 5 * 60;
@@ -1489,14 +1512,18 @@
         pomoState.mode = "focus"; pomoState.total = 25 * 60; pomoState.left = 25 * 60;
         toast("休息结束，开始新一轮专注 💪");
       }
+      if (pomoState.running) pomoState.endAt = Date.now() + pomoState.left * 1000;
     }
     pomoRender();
   }
   $("ds-pomo-start").addEventListener("click", function () {
     pomoState.running = !pomoState.running;
     if (pomoState.running) {
+      pomoState.endAt = Date.now() + pomoState.left * 1000;
       if (!pomoState.timer) pomoState.timer = setInterval(pomoTick, 1000);
-    } else if (pomoState.timer) { clearInterval(pomoState.timer); pomoState.timer = 0; }
+    } else if (pomoState.timer) {
+      clearInterval(pomoState.timer); pomoState.timer = 0;
+    }
     pomoRender();
   });
   $("ds-pomo-reset").addEventListener("click", function () {
@@ -1883,6 +1910,12 @@
     persist(true);
     if (S.pet) toast("桌宠来啦，点它会有反应");
   });
+  $("ds-memsave").addEventListener("change", function () {
+    S.memSave = $("ds-memsave").checked;
+    renderWalls();
+    persist(true);
+    toast(S.memSave ? "内存优化已开启，壁纸按 1:1 渲染" : "已切换为高清渲染（更耗内存）");
+  });
   root.querySelectorAll("[data-ic]").forEach(function (ic) {
     ic.addEventListener("click", function (e) {
       root.querySelectorAll("[data-ic]").forEach(function (o) { o.classList.remove("is-sel"); });
@@ -2189,17 +2222,19 @@
   }
   var fxControllers = new Map();
   function updateFx(canvas, m, si, p) {
-    var key = [si, m.w0, m.H, m.w1, m.H1 || 0, p.style, p.hue, p.seed, p.dim, p.fx].join("|");
+    var q = wallQuality();
+    var key = [si, m.w0, m.H, m.w1, m.H1 || 0, p.style, p.hue, p.seed, p.dim, p.fx, q, S.memSave].join("|");
     var cur = fxControllers.get(canvas);
     if (cur && cur.key === key) return;
     if (cur) { cancelAnimationFrame(cur.raf); fxControllers.delete(canvas); }
     if (p.fx !== "spark") return;
     var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return;
+    var shrink = S.memSave ? 1 : 0;
     var base = document.createElement("canvas");
-    base.width = canvas.width;
-    base.height = canvas.height;
-    base.getContext("2d").drawImage(canvas, 0, 0);
+    base.width = Math.max(2, canvas.width >> shrink);
+    base.height = Math.max(2, canvas.height >> shrink);
+    base.getContext("2d").drawImage(canvas, 0, 0, base.width, base.height);
     var rnd = mulberry32((p.seed || 1) * 31 + 7);
     var w = canvas.clientWidth || 600, h = canvas.clientHeight || 400;
     var parts = [];
@@ -2212,9 +2247,8 @@
         ctrl.last = now;
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(base, 0, 0);
-        var d2 = Math.min(window.devicePixelRatio || 1, 2);
-        ctx.setTransform(d2, 0, 0, d2, 0, 0);
+        ctx.drawImage(base, 0, 0, canvas.width, canvas.height);
+        ctx.setTransform(q, 0, 0, q, 0, 0);
         var t = (now - ctrl.t0) / 1000;
         for (var i = 0; i < parts.length; i++) {
           var pt = parts[i];
@@ -2274,6 +2308,7 @@
 
   var rotT = 0;
   function rotateWallpapers() {
+    if (document.hidden) return;
     ["main", "second", "span"].forEach(function (g) {
       S.wallpaper[g].style = WALL_STYLES[Math.floor(Math.random() * WALL_STYLES.length)];
       S.wallpaper[g].hue = Math.floor(Math.random() * 360);
@@ -2459,6 +2494,7 @@
       return f && STYLE_NAMES[f.style];
     }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
     if (typeof obj.pet === "boolean") S.pet = obj.pet;
+    if (typeof obj.memSave === "boolean") S.memSave = obj.memSave;
     ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
   }
 
@@ -2472,7 +2508,7 @@
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400),
         autoDay: S.autoDay, rotate: S.rotate, icons: S.icons, noteColor: S.noteColor,
         countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
-        wallFavs: S.wallFavs, pet: S.pet
+        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave
       });
     } catch (e) {}
   }
@@ -2666,6 +2702,13 @@
     else if (k === "escape" && !lockEl.hidden) toggleLock(false);
   });
 
+  /* ---------------- background throttling (memory) ---------------- */
+  document.addEventListener("visibilitychange", function () {
+    fxControllers.forEach(function (c) { cancelAnimationFrame(c.raf); });
+    fxControllers.clear();
+    renderWalls();
+  });
+
   /* ---------------- resize ---------------- */
   var lastW = 0, settleT = 0;
   function onStageResize() {
@@ -2722,6 +2765,7 @@
     renderQuote();
     renderFavs();
     applyPet();
+    $("ds-memsave").checked = S.memSave;
     $("ds-wcity").value = S.weatherCity;
     $("ds-wlive").checked = S.weatherLive;
     if (S.weatherLive) fetchLiveWeather();
