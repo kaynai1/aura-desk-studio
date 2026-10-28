@@ -340,6 +340,25 @@
 #desk-studio .ds-pet.ds-pet-flip::after { right: auto; left: 8px; }
 @keyframes ds-pet-squash { 0% { transform: scaleY(1); } 40% { transform: scaleY(0.7); } 100% { transform: scaleY(1); } }
 #desk-studio .ds-pet.ds-squash { animation: ds-pet-squash 0.25s ease; }
+
+/* ---------- panel mode (desktop app: settings-only, no simulator) ---------- */
+#desk-studio.ds-panelmode .ds-wall,
+#desk-studio.ds-panelmode .ds-screen,
+#desk-studio.ds-panelmode .ds-wlayer,
+#desk-studio.ds-panelmode .ds-caption,
+#desk-studio.ds-panelmode .ds-pet,
+#desk-studio.ds-panelmode .ds-ctxmenu,
+#desk-studio.ds-panelmode .ds-lockscreen,
+#desk-studio.ds-panelmode .ds-icons { display: none !important; }
+#desk-studio.ds-panelmode .ds-stage { height: auto !important; min-height: 0 !important; background: transparent; }
+#desk-studio.ds-panelmode .ds-studio {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  max-width: 640px !important;
+  margin: 0 auto !important;
+  max-height: none !important;
+}
 #desk-studio[data-perf="1"] .ds-widget, #desk-studio[data-perf="1"] .ds-menubar, #desk-studio[data-perf="1"] .ds-dock, #desk-studio[data-perf="1"] .ds-studio, #desk-studio[data-perf="1"] .ds-lockscreen, #desk-studio[data-perf="1"] .ds-icedit { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 
 /* ---------- adaptive tiers ---------- */
@@ -479,7 +498,8 @@
   <div class="ds-studio" id="ds-studio" hidden>
     <div class="ds-studio-head">
       <span>AURA 双屏工坊</span>
-      <button class="ds-studio-close cursor-interaction" id="ds-studio-close" type="button" aria-label="关闭工坊">×</button>
+      <button class="ds-studio-close cursor-interaction" id="ds-preview-toggle" type="button" aria-label="显示桌面预览" data-tooltip="显示/隐藏桌面预览">🖥</button>
+      <button class="ds-studio-close cursor-interaction" id="ds-studio-close" type="button" aria-label="关闭工坊" style="margin-left:6px">×</button>
     </div>
     <div class="ds-studio-tabs" role="tablist" aria-label="工坊分区">
       <button class="ds-sttab cursor-interaction is-on" type="button" role="tab" aria-selected="true" data-t="wall">壁纸</button>
@@ -2705,6 +2725,19 @@
     $("ds-autoapply").checked = S.autoApply !== false;
     window.aura.getWallpaperApplied && null;
   }
+  var previewOn = false;
+  function updatePanelMode() {
+    root.classList.toggle("ds-panelmode", isDesktopApp && !previewOn);
+    if (!root.classList.contains("ds-panelmode")) {
+      applyScreens();
+      renderWalls();
+    }
+  }
+  $("ds-preview-toggle").addEventListener("click", function () {
+    previewOn = !previewOn;
+    updatePanelMode();
+    toast(previewOn ? "桌面预览已显示（模拟布局，真机以系统桌面为准）" : "已切换为设置面板模式");
+  });
   var realApplyT = 0, applying = false;
   function scheduleRealApply() {
     if (!isDesktopApp || S.autoApply === false) return;
@@ -2847,6 +2880,7 @@
     if (needLayout) autoBalanceLayout();
     else clampWidgets();
     pendingRebalance = false;
+    updatePanelMode();
     renderIcons();
     renderProfiles();
     applyNoteColor();

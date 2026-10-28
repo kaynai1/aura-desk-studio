@@ -54,10 +54,10 @@ function showStudio() {
 /* ---------- main studio window ---------- */
 function createWindow() {
   const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 640,
-    minHeight: 480,
+    width: 560,
+    height: 840,
+    minWidth: 420,
+    minHeight: 560,
     autoHideMenuBar: true,
     backgroundColor: "#0c0e16",
     title: "AURA 双屏工坊",
@@ -133,6 +133,7 @@ function createDashboard(second) {
 function applyRealWallpaper(dataUrl, callback) {
   const b64 = dataUrl.replace(/^data:image\/png;base64,/, "");
   const file = path.join(app.getPath("userData"), "aura-wallpaper.png");
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, Buffer.from(b64, "base64"));
   const script = [
     "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WP { [DllImport(\"user32.dll\", CharSet=CharSet.Auto)] public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni); }'",
