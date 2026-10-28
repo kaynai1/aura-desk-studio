@@ -1,0 +1,34 @@
+{
+  "name": "aura-desk-studio",
+  "version": "1.0.0",
+  "description": "AURA 双屏工坊 — 双屏桌面美化工具 (Dual-screen desktop customization studio)",
+  "main": "main.js",
+  "author": "aura-desk-studio",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.aura.deskstudio",
+    "productName": "AURA双屏工坊",
+    "files": [
+      "main.js",
+      "index.html",
+      "lucide.min.js",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "AURA-DeskStudio-Windows.exe"
+    }
+  }
+}

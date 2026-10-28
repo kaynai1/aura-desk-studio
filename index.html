@@ -1,0 +1,2179 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' data: blob:">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AURA 双屏工坊</title>
+<script src="lucide.min.js"></script>
+<style>
+#desk-studio .ds-emoji{font-style:normal;line-height:1;display:inline-block;filter:saturate(.9)}
+#desk-studio .ds-mb-right .ds-emoji{font-size:12px}
+#desk-studio .ds-dock-item .ds-emoji{font-size:calc(var(--dock-size)*.45)}
+#desk-studio .ds-dicon .ds-emoji{font-size:21px}
+#desk-studio .ds-weather-main .ds-emoji{font-size:30px}
+#desk-studio .ds-wrow .ds-emoji{font-size:14px}
+#desk-studio .ds-btn .ds-emoji{font-size:12px}
+</style>
+</head>
+<body style="margin:0;padding:24px;background:#0c0e16">
+<div id="desk-studio" data-mode="dark">
+<style>
+#desk-studio, #desk-studio *, #desk-studio *::before, #desk-studio *::after { box-sizing: border-box; }
+#desk-studio [hidden] { display: none !important; }
+#desk-studio {
+  --acc: #7aa2ff;
+  --rad: 16px;
+  --blur: 18px;
+  --dock-size: 52px;
+  --sur: rgba(21, 23, 33, 0.55);
+  --sur-strong: rgba(25, 27, 39, 0.88);
+  --chrome: rgba(15, 17, 25, 0.52);
+  --fg: #eef1f8;
+  --mut: rgba(238, 241, 248, 0.6);
+  --line: rgba(255, 255, 255, 0.14);
+  --shadow: 0 12px 36px rgba(0, 0, 0, 0.38);
+  --icon-tile: rgba(255, 255, 255, 0.10);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.5;
+}
+#desk-studio[data-mode="light"] {
+  --sur: rgba(255, 255, 255, 0.62);
+  --sur-strong: rgba(255, 255, 255, 0.92);
+  --chrome: rgba(255, 255, 255, 0.58);
+  --fg: #1b2230;
+  --mut: rgba(27, 34, 48, 0.62);
+  --line: rgba(255, 255, 255, 0.78);
+  --shadow: 0 12px 32px rgba(31, 38, 63, 0.16);
+  --icon-tile: rgba(255, 255, 255, 0.55);
+}
+#desk-studio button { background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; }
+#desk-studio :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------- desk & screens ---------- */
+#desk-studio .ds-stage {
+  position: relative;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  background: radial-gradient(120% 140% at 50% 0%, #151926 0%, #0a0c13 70%);
+  isolation: isolate;
+}
+#desk-studio .ds-screen {
+  position: absolute;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #10131c;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.5);
+}
+#desk-studio .ds-wall { position: absolute; inset: -22px; width: calc(100% + 44px); height: calc(100% + 44px); display: block; }
+#desk-studio .ds-menubar {
+  position: absolute; top: 0; left: 0; right: 0; height: 30px; z-index: 40;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 12px;
+  background: var(--chrome);
+  backdrop-filter: blur(var(--blur)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+}
+#desk-studio .ds-mb-left, #desk-studio .ds-mb-right { display: flex; align-items: center; gap: 12px; }
+#desk-studio .ds-logo { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 32% 30%, color-mix(in srgb, var(--acc) 40%, #fff), var(--acc) 60%, color-mix(in srgb, var(--acc) 55%, #000)); box-shadow: 0 0 8px color-mix(in srgb, var(--acc) 70%, transparent); }
+#desk-studio .ds-mb-app { font-weight: 500; }
+#desk-studio .ds-mb-menu { opacity: .8; }
+#desk-studio .ds-mb-right svg { width: 13px; height: 13px; }
+#desk-studio .ds-mb-time { font-variant-numeric: tabular-nums; }
+#desk-studio .ds-badge { font-size: 10px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); }
+#desk-studio .ds-caption {
+  position: absolute; text-align: center;
+  font-size: 11.5px; color: #7e879c; letter-spacing: .04em;
+  pointer-events: none; white-space: nowrap;
+}
+#desk-studio .ds-caption b { color: #aab3c7; font-weight: 500; }
+
+/* ---------- desktop icons (main screen) ---------- */
+#desk-studio .ds-icons { position: absolute; left: 12px; top: 42px; z-index: 2; display: flex; flex-direction: column; gap: 8px; transition: opacity .25s ease; }
+#desk-studio .ds-icons.ds-icons-off { opacity: 0; pointer-events: none; }
+#desk-studio .ds-dicon { width: 72px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 10px; border: 1px solid transparent; }
+#desk-studio .ds-dicon .ds-dtile { width: 42px; height: 42px; border-radius: 12px; background: var(--icon-tile); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; }
+#desk-studio .ds-dicon svg { width: 22px; height: 22px; }
+#desk-studio .ds-dicon span.ds-dlabel { font-size: 11px; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+#desk-studio .ds-dicon.is-sel { background: color-mix(in srgb, var(--acc) 28%, transparent); border-color: color-mix(in srgb, var(--acc) 55%, transparent); }
+
+/* ---------- widgets ---------- */
+#desk-studio .ds-wlayer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+#desk-studio .ds-widget {
+  position: absolute; width: 232px; pointer-events: auto;
+  padding: 12px 15px 13px;
+  border-radius: var(--rad);
+  background: color-mix(in srgb, var(--sur) calc(var(--walpha, 1) * 100%), transparent);
+  transform: scale(var(--wscale, 1));
+  transform-origin: top left;
+  border: 1px solid var(--line);
+  backdrop-filter: blur(var(--blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.55);
+  box-shadow: var(--shadow);
+  touch-action: none;
+}
+#desk-studio .ds-w-title { font-size: 11.5px; letter-spacing: .08em; color: var(--mut); display: flex; align-items: center; gap: 6px; margin-bottom: 7px; }
+#desk-studio .ds-chip { font-size: 10px; padding: 0 6px; border-radius: 99px; border: 1px solid var(--line); color: var(--mut); }
+#desk-studio .ds-clock-time { font-size: 36px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+#desk-studio .ds-clock-date { margin-top: 3px; color: var(--mut); font-size: 12.5px; }
+#desk-studio .ds-weather-main { display: flex; align-items: center; gap: 10px; }
+#desk-studio .ds-weather-main svg { width: 32px; height: 32px; }
+#desk-studio .ds-weather-temp { font-size: 30px; font-weight: 500; font-variant-numeric: tabular-nums; }
+#desk-studio .ds-weather-sub, #desk-studio .ds-weather-hi { color: var(--mut); font-size: 12px; margin-top: 2px; }
+#desk-studio .ds-m-row { display: grid; grid-template-columns: 34px 1fr 52px; align-items: center; gap: 8px; margin-top: 7px; font-size: 11.5px; }
+#desk-studio .ds-m-row:first-of-type { margin-top: 0; }
+#desk-studio .ds-m-track { height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 14%, transparent); overflow: hidden; }
+#desk-studio .ds-m-bar { height: 100%; width: 30%; border-radius: 99px; background: var(--acc); transition: width .8s ease; }
+#desk-studio .ds-m-val { text-align: right; color: var(--mut); font-variant-numeric: tabular-nums; }
+#desk-studio .ds-cal-head { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 3px; }
+#desk-studio .ds-cal-head span { text-align: center; font-size: 10.5px; color: var(--mut); }
+#desk-studio .ds-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+#desk-studio .ds-cal-grid span { text-align: center; font-size: 11.5px; padding: 3px 0; border-radius: 7px; font-variant-numeric: tabular-nums; color: var(--fg); }
+#desk-studio .ds-cal-grid span.ds-out { opacity: .28; }
+#desk-studio .ds-cal-grid span.ds-today { background: var(--acc); color: #fff; font-weight: 500; }
+#desk-studio .ds-todo-add { display: flex; gap: 6px; margin-bottom: 8px; }
+#desk-studio .ds-todo-add input { flex: 1; min-width: 0; height: 28px; border-radius: 9px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); padding: 0 9px; font: inherit; font-size: 12.5px; }
+#desk-studio .ds-todo-add input::placeholder { color: var(--mut); }
+#desk-studio .ds-todo-add button { height: 28px; padding: 0 11px; border-radius: 9px; background: color-mix(in srgb, var(--fg) 10%, transparent); font-size: 12px; }
+#desk-studio .ds-todo-list { max-height: 118px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; margin: 0 -4px; padding: 0 4px; }
+#desk-studio .ds-todo-item { display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-radius: 9px; font-size: 12.5px; }
+#desk-studio .ds-todo-item:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); }
+#desk-studio .ds-tick { flex: none; width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid var(--mut); position: relative; }
+#desk-studio .ds-todo-item.is-done .ds-tick { background: var(--acc); border-color: var(--acc); }
+#desk-studio .ds-todo-item.is-done .ds-tick::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+#desk-studio .ds-todo-item.is-done .ds-todo-text { text-decoration: line-through; opacity: .55; }
+#desk-studio .ds-todo-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#desk-studio .ds-todo-del { flex: none; width: 18px; height: 18px; border-radius: 50%; text-align: center; line-height: 16px; color: var(--mut); font-size: 13px; }
+#desk-studio .ds-todo-del:hover { background: color-mix(in srgb, var(--fg) 12%, transparent); color: var(--fg); }
+#desk-studio .ds-note-area { width: 100%; height: 88px; resize: none; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 12.5px; line-height: 1.55; padding: 0; }
+#desk-studio .ds-note-area::placeholder { color: var(--mut); }
+#desk-studio .ds-note-area:focus-visible { outline: none; }
+
+/* ---------- dock ---------- */
+#desk-studio .ds-dock {
+  position: absolute; z-index: 60;
+  display: flex; align-items: flex-end; gap: 8px;
+  padding: 8px 11px;
+  border-radius: 20px;
+  background: var(--chrome);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(var(--blur)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.5);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+#desk-studio .ds-dock-item {
+  width: var(--dock-size); height: var(--dock-size);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fg) 9%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  transform-origin: 50% 100%;
+  transition: transform .16s ease;
+}
+#desk-studio .ds-dock-item:hover { background: color-mix(in srgb, var(--fg) 16%, transparent); }
+#desk-studio .ds-dock-item svg { width: calc(var(--dock-size) * .45); height: calc(var(--dock-size) * .45); }
+#desk-studio .ds-dock-item.is-studio { background: color-mix(in srgb, var(--acc) 30%, transparent); }
+#desk-studio .ds-dock-sep { flex: none; width: 1px; height: calc(var(--dock-size) * .8); background: var(--line); }
+@keyframes ds-bounce { 0%{transform:translateY(0)} 35%{transform:translateY(-14px)} 60%{transform:translateY(0)} 78%{transform:translateY(-5px)} 100%{transform:translateY(0)} }
+#desk-studio .ds-dock-item.ds-bounce { animation: ds-bounce .5s ease; }
+
+/* ---------- studio window ---------- */
+#desk-studio .ds-studio {
+  position: absolute; z-index: 70;
+  top: 16px; right: 16px;
+  width: 300px;
+  max-height: calc(100% - 32px);
+  display: flex; flex-direction: column;
+  border-radius: 18px;
+  background: var(--sur-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(calc(var(--blur) + 6px)) saturate(1.5);
+  -webkit-backdrop-filter: blur(calc(var(--blur) + 6px)) saturate(1.5);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  pointer-events: auto;
+}
+#desk-studio .ds-studio-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px 9px; font-weight: 500; }
+#desk-studio .ds-studio-close { width: 22px; height: 22px; border-radius: 50%; background: color-mix(in srgb, var(--fg) 10%, transparent); text-align: center; line-height: 20px; font-size: 13px; color: var(--mut); }
+#desk-studio .ds-studio-close:hover { color: var(--fg); }
+#desk-studio .ds-studio-tabs { display: flex; gap: 4px; padding: 0 10px 10px; flex-wrap: wrap; }
+#desk-studio .ds-sttab { padding: 4px 10px; border-radius: 99px; font-size: 12px; color: var(--mut); }
+#desk-studio .ds-sttab.is-on { background: var(--acc); color: #fff; }
+#desk-studio .ds-studio-body { overflow-y: auto; padding: 2px 14px 14px; }
+#desk-studio .ds-flabel { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--mut); margin: 12px 0 6px; }
+#desk-studio .ds-pane > .ds-flabel:first-child { margin-top: 2px; }
+#desk-studio .ds-flabel b { font-weight: 500; color: var(--fg); font-variant-numeric: tabular-nums; }
+#desk-studio .ds-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+#desk-studio .ds-style-chip { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 4px; border-radius: 10px; border: 1px solid transparent; }
+#desk-studio .ds-style-chip canvas { display: block; width: 74px; height: 46px; border-radius: 7px; }
+#desk-studio .ds-style-chip span { font-size: 11px; color: var(--mut); }
+#desk-studio .ds-style-chip.is-on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 14%, transparent); }
+#desk-studio .ds-style-chip.is-on span { color: var(--fg); }
+#desk-studio input[type="range"] { width: 100%; accent-color: var(--acc); margin: 0; }
+#desk-studio .ds-btnrow { display: flex; gap: 8px; margin-top: 12px; }
+#desk-studio .ds-btn { flex: 1; height: 30px; border-radius: 10px; background: color-mix(in srgb, var(--fg) 10%, transparent); display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; }
+#desk-studio .ds-btn:hover { background: color-mix(in srgb, var(--fg) 16%, transparent); }
+#desk-studio .ds-btn.ds-primary { background: var(--acc); color: #fff; }
+#desk-studio .ds-btn.ds-primary:hover { background: color-mix(in srgb, var(--acc) 85%, #000); }
+#desk-studio .ds-btn svg { width: 13px; height: 13px; }
+#desk-studio .ds-seg { display: flex; background: color-mix(in srgb, var(--fg) 8%, transparent); border-radius: 10px; padding: 3px; gap: 3px; flex-wrap: wrap; }
+#desk-studio .ds-seg button { flex: 1; height: 25px; border-radius: 8px; text-align: center; font-size: 12px; color: var(--mut); white-space: nowrap; }
+#desk-studio .ds-seg button.is-on { background: var(--acc); color: #fff; }
+#desk-studio .ds-swatches { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+#desk-studio .ds-swatch { width: 23px; height: 23px; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 2px var(--sur-strong); }
+#desk-studio .ds-swatch.is-on { border-color: var(--fg); }
+#desk-studio input[type="color"] { width: 30px; height: 23px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: transparent; }
+#desk-studio .ds-wrow { display: flex; align-items: center; gap: 9px; padding: 7px 2px; font-size: 12.5px; }
+#desk-studio .ds-wrow svg { width: 15px; height: 15px; color: var(--mut); }
+#desk-studio .ds-wrow span { flex: 1; }
+#desk-studio .ds-switch { position: relative; flex: none; width: 35px; height: 21px; }
+#desk-studio .ds-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; }
+#desk-studio .ds-switch span { position: absolute; inset: 0; border-radius: 99px; background: color-mix(in srgb, var(--fg) 16%, transparent); transition: background .15s; pointer-events: none; }
+#desk-studio .ds-switch span::after { content: ""; position: absolute; left: 2.5px; top: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+#desk-studio .ds-switch input:checked + span { background: var(--acc); }
+#desk-studio .ds-switch input:checked + span::after { transform: translateX(14px); }
+#desk-studio .ds-switch input:focus-visible + span { outline: 2px solid var(--acc); outline-offset: 2px; }
+#desk-studio .ds-studio textarea { width: 100%; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 6%, transparent); color: var(--fg); font: inherit; font-size: 11.5px; line-height: 1.5; padding: 8px 9px; resize: vertical; }
+#desk-studio .ds-hint { font-size: 11.5px; color: var(--mut); margin: 10px 0 0; }
+#desk-studio .ds-preset { display: flex; flex-wrap: wrap; gap: 8px; }
+#desk-studio .ds-preset button { padding: 6px 11px; border-radius: 10px; border: 1px solid var(--line); font-size: 12px; color: var(--fg); background: color-mix(in srgb, var(--fg) 5%, transparent); }
+#desk-studio .ds-preset button:hover { border-color: var(--acc); }
+
+/* ---------- toast ---------- */
+#desk-studio .ds-toast {
+  position: absolute; z-index: 90; top: 18px; left: 50%;
+  transform: translate(-50%, -8px);
+  padding: 7px 16px; border-radius: 99px;
+  background: var(--sur-strong); border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+#desk-studio .ds-toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- motion & focus ---------- */
+@keyframes ds-drift {
+  0% { transform: scale(1.07) translate(0, 0); }
+  50% { transform: scale(1.13) translate(-1.6%, -1.2%); }
+  100% { transform: scale(1.07) translate(0, 0); }
+}
+#desk-studio .ds-wall.ds-motion { animation: ds-drift 42s ease-in-out infinite; }
+#desk-studio .ds-widget, #desk-studio .ds-dock { transition: opacity .35s ease; }
+#desk-studio.ds-focus .ds-widget { opacity: 0; pointer-events: none; }
+#desk-studio.ds-focus .ds-dock { opacity: .22; }
+#desk-studio.ds-focus .ds-icons { opacity: 0; }
+
+/* ---------- lock screen ---------- */
+#desk-studio .ds-lockscreen {
+  position: absolute; inset: 0; z-index: 80;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(8, 10, 18, 0.45);
+  backdrop-filter: blur(26px) brightness(0.75);
+  -webkit-backdrop-filter: blur(26px) brightness(0.75);
+}
+#desk-studio .ds-lock-time { font-size: 84px; font-weight: 500; line-height: 1; letter-spacing: .02em; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.45); }
+#desk-studio .ds-lock-date { font-size: 16px; color: rgba(255, 255, 255, 0.88); text-shadow: 0 2px 12px rgba(0,0,0,.4); }
+#desk-studio .ds-lock-hint { position: absolute; bottom: 26px; font-size: 12px; color: rgba(255, 255, 255, 0.62); }
+
+/* ---------- desktop icon editor ---------- */
+#desk-studio .ds-icedit {
+  position: absolute; z-index: 75; width: 178px; padding: 10px;
+  border-radius: 12px;
+  background: var(--sur-strong);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5);
+  -webkit-backdrop-filter: blur(calc(var(--blur) + 4px)) saturate(1.5);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+#desk-studio .ds-icedit input { width: 100%; height: 26px; border-radius: 8px; border: 1px solid var(--line); background: color-mix(in srgb, var(--fg) 7%, transparent); color: var(--fg); padding: 0 8px; font: inherit; font-size: 12px; }
+#desk-studio .ds-ic-glyphs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+#desk-studio .ds-ic-glyphs button { width: 27px; height: 27px; border-radius: 8px; text-align: center; font-size: 15px; line-height: 1; border: 1px solid transparent; }
+#desk-studio .ds-ic-glyphs button.is-on { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 16%, transparent); }
+#desk-studio .ds-dtile .ds-emoji { font-size: 21px; }
+#desk-studio[data-perf="1"] .ds-widget, #desk-studio[data-perf="1"] .ds-menubar, #desk-studio[data-perf="1"] .ds-dock, #desk-studio[data-perf="1"] .ds-studio, #desk-studio[data-perf="1"] .ds-lockscreen, #desk-studio[data-perf="1"] .ds-icedit { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+
+/* ---------- adaptive tiers ---------- */
+#desk-studio .ds-vwrap { max-width: 100%; margin: 0 auto; transition: max-width .3s ease; }
+#desk-studio[data-size="mid"] .ds-sttab { padding: 4px 9px; }
+#desk-studio[data-size="mid"] .ds-studio { width: 272px; }
+#desk-studio[data-size="narrow"] .ds-mb-menu, #desk-studio[data-size="xs"] .ds-mb-menu { display: none; }
+#desk-studio[data-size="narrow"] .ds-studio, #desk-studio[data-size="xs"] .ds-studio { max-height: 56%; }
+#desk-studio[data-size="narrow"] .ds-sttab, #desk-studio[data-size="xs"] .ds-sttab { padding: 4px 8px; font-size: 11.5px; }
+#desk-studio[data-size="xs"] .ds-widget { width: 188px; }
+#desk-studio[data-size="xs"] .ds-dicon { display: none; }
+#desk-studio[data-size="xs"] .ds-clock-time { font-size: 30px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #desk-studio .ds-dock-item, #desk-studio .ds-m-bar, #desk-studio .ds-toast, #desk-studio .ds-switch span, #desk-studio .ds-icons, #desk-studio .ds-vwrap, #desk-studio .ds-widget, #desk-studio .ds-dock { transition: none; }
+  #desk-studio .ds-dock-item.ds-bounce, #desk-studio .ds-wall.ds-motion { animation: none; }
+}
+</style>
+
+<div class="ds-vwrap" id="ds-vwrap">
+<div class="ds-stage" id="ds-stage">
+  <div class="ds-screen" id="ds-scr0" aria-label="主屏">
+    <canvas class="ds-wall" id="ds-wall0" role="img" aria-label="主屏壁纸"></canvas>
+    <div class="ds-menubar">
+      <div class="ds-mb-left">
+        <span class="ds-logo" aria-hidden="true"></span>
+        <span class="ds-mb-app">AURA 工坊</span>
+        <span class="ds-mb-menu">文件</span>
+        <span class="ds-mb-menu">显示</span>
+      </div>
+      <div class="ds-mb-right">
+        <i data-lucide="wifi" aria-hidden="true"></i>
+        <i data-lucide="battery-medium" aria-hidden="true"></i>
+        <span class="ds-mb-time" id="ds-mb-time0">--</span>
+      </div>
+    </div>
+    <div class="ds-icons" id="ds-icons" aria-label="桌面图标">
+      <div class="ds-dicon cursor-interaction" data-ic="pc"><span class="ds-dtile"><i data-lucide="monitor" aria-hidden="true"></i></span><span class="ds-dlabel" data-il="pc">此电脑</span></div>
+      <div class="ds-dicon cursor-interaction" data-ic="docs"><span class="ds-dtile"><i data-lucide="folder" aria-hidden="true"></i></span><span class="ds-dlabel" data-il="docs">我的文档</span></div>
+      <div class="ds-dicon cursor-interaction" data-ic="photos"><span class="ds-dtile"><i data-lucide="image" aria-hidden="true"></i></span><span class="ds-dlabel" data-il="photos">照片</span></div>
+      <div class="ds-dicon cursor-interaction" data-ic="trash"><span class="ds-dtile"><i data-lucide="trash-2" aria-hidden="true"></i></span><span class="ds-dlabel" data-il="trash">回收站</span></div>
+    </div>
+  </div>
+
+  <div class="ds-screen" id="ds-scr1" aria-label="副屏">
+    <canvas class="ds-wall" id="ds-wall1" role="img" aria-label="副屏壁纸"></canvas>
+    <div class="ds-menubar">
+      <div class="ds-mb-left">
+        <span class="ds-logo" aria-hidden="true"></span>
+        <span class="ds-mb-app">副屏</span>
+      </div>
+      <div class="ds-mb-right">
+        <i data-lucide="cloud-sun" aria-hidden="true"></i>
+        <span class="ds-mb-time" id="ds-mb-time1">--</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-caption" id="ds-cap0"><b>主屏</b> · 16:9</div>
+  <div class="ds-caption" id="ds-cap1"><b>副屏</b> · 竖屏 9:16</div>
+
+  <div class="ds-wlayer" id="ds-wlayer">
+    <section class="ds-widget cursor-interaction" id="ds-w-clock" data-w="clock" aria-label="时钟小组件">
+      <div class="ds-w-title">时钟</div>
+      <div class="ds-clock-time" id="ds-clock-time">--:--</div>
+      <div class="ds-clock-date" id="ds-clock-date">—</div>
+    </section>
+    <section class="ds-widget cursor-interaction" id="ds-w-weather" data-w="weather" aria-label="天气小组件（演示数据）">
+      <div class="ds-w-title">天气 <span class="ds-chip">演示</span></div>
+      <div class="ds-weather-main"><i data-lucide="cloud-sun" aria-hidden="true"></i><span class="ds-weather-temp">22°</span></div>
+      <div class="ds-weather-sub">多云 · 微风 · 杭州</div>
+      <div class="ds-weather-hi">最高 26° · 最低 18°</div>
+    </section>
+    <section class="ds-widget cursor-interaction" id="ds-w-monitor" data-w="monitor" aria-label="系统状态小组件（模拟数据）">
+      <div class="ds-w-title">系统状态 <span class="ds-chip">模拟</span></div>
+      <div class="ds-m-row"><span>CPU</span><div class="ds-m-track"><div class="ds-m-bar" id="ds-m-cpu"></div></div><span class="ds-m-val" id="ds-m-cpu-v">--</span></div>
+      <div class="ds-m-row"><span>内存</span><div class="ds-m-track"><div class="ds-m-bar" id="ds-m-ram"></div></div><span class="ds-m-val" id="ds-m-ram-v">--</span></div>
+      <div class="ds-m-row"><span>网络</span><div class="ds-m-track"><div class="ds-m-bar" id="ds-m-net"></div></div><span class="ds-m-val" id="ds-m-net-v">--</span></div>
+    </section>
+    <section class="ds-widget cursor-interaction" id="ds-w-calendar" data-w="calendar" aria-label="日历小组件">
+      <div class="ds-w-title" id="ds-cal-title">日历</div>
+      <div class="ds-cal-head"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+      <div class="ds-cal-grid" id="ds-cal-grid"></div>
+    </section>
+    <section class="ds-widget cursor-interaction" id="ds-w-todo" data-w="todo" aria-label="待办小组件">
+      <div class="ds-w-title">待办 <span id="ds-todo-count"></span></div>
+      <div class="ds-todo-add">
+        <input id="ds-todo-in" type="text" placeholder="添加待办…" aria-label="新待办内容">
+        <button id="ds-todo-add" type="button" class="cursor-interaction">添加</button>
+      </div>
+      <div class="ds-todo-list" id="ds-todo-list"></div>
+    </section>
+    <section class="ds-widget cursor-interaction" id="ds-w-note" data-w="note" aria-label="便签小组件">
+      <div class="ds-w-title">便签</div>
+      <textarea class="ds-note-area" id="ds-note" maxlength="400" placeholder="在这里记点东西，会自动保存…"></textarea>
+    </section>
+    <div class="ds-dock" id="ds-dock0" role="toolbar" aria-label="主屏 Dock"></div>
+    <div class="ds-dock" id="ds-dock1" role="toolbar" aria-label="副屏 Dock"></div>
+  </div>
+
+  <div class="ds-studio" id="ds-studio" hidden>
+    <div class="ds-studio-head">
+      <span>AURA 双屏工坊</span>
+      <button class="ds-studio-close cursor-interaction" id="ds-studio-close" type="button" aria-label="关闭工坊">×</button>
+    </div>
+    <div class="ds-studio-tabs" role="tablist" aria-label="工坊分区">
+      <button class="ds-sttab cursor-interaction is-on" type="button" role="tab" aria-selected="true" data-t="wall">壁纸</button>
+      <button class="ds-sttab cursor-interaction" type="button" role="tab" aria-selected="false" data-t="dual">双屏</button>
+      <button class="ds-sttab cursor-interaction" type="button" role="tab" aria-selected="false" data-t="widgets">小组件</button>
+      <button class="ds-sttab cursor-interaction" type="button" role="tab" aria-selected="false" data-t="theme">主题</button>
+      <button class="ds-sttab cursor-interaction" type="button" role="tab" aria-selected="false" data-t="config">配置</button>
+    </div>
+    <div class="ds-studio-body">
+      <div class="ds-pane" data-p="wall">
+        <div class="ds-flabel">应用到</div>
+        <div class="ds-seg" id="ds-wtarget">
+          <button type="button" class="cursor-interaction" data-v="main">主屏</button>
+          <button type="button" class="cursor-interaction" data-v="second">副屏</button>
+          <button type="button" class="cursor-interaction" data-v="span">跨屏全景</button>
+        </div>
+        <div class="ds-flabel">风格</div>
+        <div class="ds-chips" id="ds-styles"></div>
+        <div class="ds-flabel">色调 <b id="ds-hue-v">232°</b></div>
+        <input type="range" id="ds-hue" min="0" max="360" step="1" aria-label="壁纸色调">
+        <div class="ds-flabel">压暗 <b id="fs-dim-v">24%</b></div>
+        <input type="range" id="ds-dim" min="0" max="60" step="1" aria-label="壁纸压暗">
+        <div class="ds-flabel">动态效果</div>
+        <div class="ds-seg" id="ds-fx">
+          <button type="button" class="cursor-interaction" data-v="none">关</button>
+          <button type="button" class="cursor-interaction" data-v="drift">漂移</button>
+          <button type="button" class="cursor-interaction" data-v="spark">星火粒子</button>
+        </div>
+        <div class="ds-flabel">随昼夜自动调氛围</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="sun-moon" aria-hidden="true"></i><span>按 5-9 晨 / 9-16 昼 / 16-20 暮 / 夜间</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-autoday" aria-label="随昼夜自动调氛围"><span></span></label></div>
+        <div class="ds-flabel">自动轮换壁纸</div>
+        <div class="ds-seg" id="ds-rotate">
+          <button type="button" class="cursor-interaction" data-v="0">关</button>
+          <button type="button" class="cursor-interaction" data-v="60">每 60 秒</button>
+          <button type="button" class="cursor-interaction" data-v="300">每 5 分钟</button>
+        </div>
+        <div class="ds-btnrow">
+          <button class="ds-btn cursor-interaction" id="ds-rand" type="button">🎲 随机一款</button>
+          <button class="ds-btn ds-primary cursor-interaction" id="ds-dl" type="button">下载壁纸 PNG</button>
+        </div>
+        <p class="ds-hint">「跨屏全景」会把一张壁纸无缝铺满两块屏幕；下载的 PNG 按当前屏幕比例生成，可直接分别设为两张壁纸。</p>
+      </div>
+
+      <div class="ds-pane" data-p="dual" hidden>
+        <div class="ds-flabel">副屏</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="monitor" aria-hidden="true"></i><span>启用第二块屏幕</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-s2on" aria-label="启用副屏"><span></span></label></div>
+        <div class="ds-flabel">主屏比例</div>
+        <div class="ds-seg" id="ds-r1">
+          <button type="button" class="cursor-interaction" data-v="1.7778">16:9</button>
+          <button type="button" class="cursor-interaction" data-v="1.6">16:10</button>
+          <button type="button" class="cursor-interaction" data-v="2.3333">带鱼 21:9</button>
+        </div>
+        <div class="ds-flabel">副屏比例</div>
+        <div class="ds-seg" id="ds-r2">
+          <button type="button" class="cursor-interaction" data-v="0.5625">竖屏 9:16</button>
+          <button type="button" class="cursor-interaction" data-v="0.75">竖屏 3:4</button>
+          <button type="button" class="cursor-interaction" data-v="1.3333">横屏 4:3</button>
+          <button type="button" class="cursor-interaction" data-v="1.7778">横屏 16:9</button>
+          <button type="button" class="cursor-interaction" data-v="2.3333">带鱼 21:9</button>
+        </div>
+        <div class="ds-flabel">Dock 显示在</div>
+        <div class="ds-seg" id="ds-dmode">
+          <button type="button" class="cursor-interaction" data-v="main">仅主屏</button>
+          <button type="button" class="cursor-interaction" data-v="dual">双屏</button>
+          <button type="button" class="cursor-interaction" data-v="second">仅副屏</button>
+        </div>
+        <div class="ds-flabel">图标大小 <b id="ds-dsize-v">50px</b></div>
+        <input type="range" id="ds-dsize" min="40" max="64" step="1" aria-label="Dock 图标大小">
+        <div class="ds-flabel">悬停放大效果</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="scan" aria-hidden="true"></i><span>鼠标靠近时图标放大</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-mag" aria-label="悬停放大效果"><span></span></label></div>
+        <div class="ds-flabel">双屏场景预设</div>
+        <div class="ds-preset">
+          <button type="button" class="cursor-interaction" data-preset="work">高效办公</button>
+          <button type="button" class="cursor-interaction" data-preset="live">监控直播</button>
+          <button type="button" class="cursor-interaction" data-preset="focus">沉浸专注</button>
+          <button type="button" class="cursor-interaction" data-preset="balance">双屏均衡</button>
+        </div>
+        <div class="ds-flabel">模拟窗口宽度 <b id="ds-vw-v">跟随窗口</b></div>
+        <input type="range" id="ds-vw" min="360" max="1240" step="10" value="1240" aria-label="模拟窗口宽度">
+        <p class="ds-hint">预设会重新分配两块屏上的小组件；拖窄「模拟窗口宽度」可以预览自适应布局——双屏会自动上下堆叠、工坊面板收进底部。</p>
+      </div>
+
+      <div class="ds-pane" data-p="widgets" hidden>
+        <div class="ds-flabel">显示与隐藏</div>
+        <div id="ds-wtoggles">
+          <div class="ds-wrow"><i data-lucide="clock" aria-hidden="true"></i><span>时钟</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="clock" aria-label="显示时钟"><span></span></label></div>
+          <div class="ds-wrow"><i data-lucide="cloud-sun" aria-hidden="true"></i><span>天气（演示）</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="weather" aria-label="显示天气"><span></span></label></div>
+          <div class="ds-wrow"><i data-lucide="activity" aria-hidden="true"></i><span>系统状态（模拟）</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="monitor" aria-label="显示系统状态"><span></span></label></div>
+          <div class="ds-wrow"><i data-lucide="calendar-days" aria-hidden="true"></i><span>日历</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="calendar" aria-label="显示日历"><span></span></label></div>
+          <div class="ds-wrow"><i data-lucide="list-checks" aria-hidden="true"></i><span>待办</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="todo" aria-label="显示待办"><span></span></label></div>
+          <div class="ds-wrow"><i data-lucide="sticky-note" aria-hidden="true"></i><span>便签</span><label class="ds-switch cursor-interaction"><input type="checkbox" data-wtoggle="note" aria-label="显示便签"><span></span></label></div>
+        </div>
+        <div class="ds-btnrow">
+          <button class="ds-btn cursor-interaction" id="ds-layout" type="button">重置布局</button>
+        </div>
+        <p class="ds-hint">按住小组件拖动即可移动，直接拖过屏幕间隙就能把它甩到另一块屏上。</p>
+      </div>
+
+      <div class="ds-pane" data-p="theme" hidden>
+        <div class="ds-flabel">一键主题</div>
+        <div class="ds-preset" id="ds-themes"></div>
+        <div class="ds-flabel">外观（两块屏同步）</div>
+        <div class="ds-seg" id="ds-mode">
+          <button type="button" class="cursor-interaction" data-v="light">浅色</button>
+          <button type="button" class="cursor-interaction" data-v="dark">深色</button>
+        </div>
+        <div class="ds-flabel">强调色</div>
+        <div class="ds-swatches" id="ds-swatches"></div>
+        <div class="ds-flabel">毛玻璃强度 <b id="ds-glass-v">18px</b></div>
+        <input type="range" id="ds-glass" min="0" max="30" step="1" aria-label="毛玻璃强度">
+        <div class="ds-flabel">圆角 <b id="ds-radius-v">16px</b></div>
+        <input type="range" id="ds-radius" min="6" max="24" step="1" aria-label="圆角大小">
+        <div class="ds-flabel">组件大小 <b id="ds-widgetscale-v">100%</b></div>
+        <input type="range" id="ds-widgetscale" min="85" max="115" step="5" aria-label="组件大小">
+        <div class="ds-flabel">组件透明度 <b id="ds-widgetalpha-v">100%</b></div>
+        <input type="range" id="ds-widgetalpha" min="40" max="100" step="5" aria-label="组件透明度">
+        <div class="ds-flabel">性能模式</div>
+        <div class="ds-wrow" style="padding-top:0"><i data-lucide="zap" aria-hidden="true"></i><span>关闭毛玻璃，老电脑更流畅</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-perf" aria-label="性能模式"><span></span></label></div>
+      </div>
+
+      <div class="ds-pane" data-p="config" hidden>
+        <div class="ds-flabel">导出配置（JSON）</div>
+        <textarea id="ds-exp" rows="5" readonly aria-label="导出的配置 JSON"></textarea>
+        <div class="ds-btnrow">
+          <button class="ds-btn cursor-interaction" id="ds-copy" type="button">复制配置</button>
+          <button class="ds-btn cursor-interaction" id="ds-refresh" type="button">刷新</button>
+        </div>
+        <div class="ds-flabel">导入配置</div>
+        <textarea id="ds-imp" rows="5" placeholder="粘贴配置 JSON 后点「应用配置」" aria-label="导入的配置 JSON"></textarea>
+        <div class="ds-btnrow">
+          <button class="ds-btn ds-primary cursor-interaction" id="ds-apply" type="button">应用配置</button>
+        </div>
+        <div class="ds-flabel">配置档（最多 4 套）</div>
+        <div class="ds-todo-add">
+          <input id="ds-prof-name" type="text" placeholder="方案名称，如：上班" aria-label="配置档名称">
+          <button id="ds-prof-save" type="button" class="cursor-interaction">保存</button>
+        </div>
+        <div id="ds-prof-list"></div>
+        <div class="ds-btnrow">
+          <button class="ds-btn cursor-interaction" id="ds-factory" type="button">恢复默认设置（保留配置档）</button>
+        </div>
+        <p class="ds-hint">快捷键：F 专注模式 · R 随机壁纸 · L 锁屏预览 · Esc 解锁</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-lockscreen cursor-interaction" id="ds-lock" hidden role="button" aria-label="锁屏预览，点击解锁">
+    <div class="ds-lock-time" id="ds-lock-time">00:00</div>
+    <div class="ds-lock-date" id="ds-lock-date">—</div>
+    <div class="ds-lock-hint">点击任意位置或按 Esc 解锁 · L 再次预览</div>
+  </div>
+
+  <div class="ds-icedit" id="ds-icedit" hidden>
+    <input id="ds-icedit-name" type="text" maxlength="12" aria-label="图标名称">
+    <div class="ds-ic-glyphs" id="ds-ic-glyphs"></div>
+    <div class="ds-btnrow" style="margin-top:9px">
+      <button class="ds-btn cursor-interaction" id="ds-icedit-hide" type="button">隐藏图标</button>
+      <button class="ds-btn cursor-interaction" id="ds-icedit-reset" type="button">恢复默认</button>
+    </div>
+  </div>
+
+  <div class="ds-toast" id="ds-toast" role="status" aria-live="polite"></div>
+</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var root = document.getElementById("desk-studio");
+  if (!root) return;
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ---------------- state ---------------- */
+  var STYLE_NAMES = { aurora: "极光", mesh: "晨雾", dune: "落日", starfield: "星野", mono: "极简" };
+  var WALL_STYLES = ["aurora", "mesh", "dune", "starfield", "mono"];
+  var RATIO_NAMES = { "1.7778": "16:9", "1.6": "16:10", "2.3333": "带鱼 21:9", "0.5625": "竖屏 9:16", "0.75": "竖屏 3:4", "1.3333": "横屏 4:3" };
+
+  function wp(style, hue, dim) { return { style: style, hue: hue, seed: 7, dim: dim, motion: false }; }
+  var DEFAULTS = {
+    wallpaper: {
+      main: wp("aurora", 232, 24),
+      second: wp("dune", 18, 20),
+      span: Object.assign(wp("aurora", 258, 24), { on: false })
+    },
+    theme: { mode: "dark", accent: "#7aa2ff", glass: 18, radius: 16, widgetScale: 100, widgetAlpha: 100, perf: false },
+    dock: { mode: "main", size: 50, magnify: true },
+    screens: { secondOn: true, r1: 1.7778, r2: 0.5625 },
+    autoDay: false,
+    rotate: 0,
+    widgets: {},
+    todo: [
+      { text: "把这张卡片拖到另一块屏试试", done: false },
+      { text: "点 Dock 的 ⚙ 打开双屏工坊", done: false },
+      { text: "切换「跨屏全景」壁纸", done: true }
+    ],
+    note: "副屏便签：在这里记点东西…\n输入会自动保存。"
+  };
+  ["clock", "weather", "monitor", "calendar", "todo", "note"].forEach(function (k) {
+    DEFAULTS.widgets[k] = { on: true, x: null, y: null };
+  });
+
+  var S = {};
+  function freshState(keepProfiles) {
+    var keep = keepProfiles ? (S.profiles || []) : null;
+    S = {
+      wallpaper: { main: Object.assign({}, DEFAULTS.wallpaper.main), second: Object.assign({}, DEFAULTS.wallpaper.second), span: Object.assign({}, DEFAULTS.wallpaper.span) },
+      theme: Object.assign({}, DEFAULTS.theme),
+      dock: Object.assign({}, DEFAULTS.dock),
+      screens: Object.assign({}, DEFAULTS.screens),
+      widgets: {},
+      todo: DEFAULTS.todo.slice(),
+      note: DEFAULTS.note
+    };
+    S.vw = 0;
+    S.autoDay = false;
+    S.rotate = 0;
+    S.profiles = keep || [];
+    S.icons = {};
+    Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
+  }
+  freshState(false);
+
+  function pick(src, dst) {
+    var out = {};
+    Object.keys(dst).forEach(function (k) { if (src[k] !== undefined && src[k] !== null) out[k] = src[k]; });
+    return out;
+  }
+  function mergeWp(src, dst) {
+    ["main", "second", "span"].forEach(function (g) { if (src[g]) Object.assign(dst[g], pick(src[g], dst[g])); });
+  }
+  function localCfg(kind, val) {
+    try {
+      if (kind === "get") {
+        var raw = localStorage.getItem("aura-desk-cfg");
+        return raw ? JSON.parse(raw) : null;
+      }
+      localStorage.setItem("aura-desk-cfg", JSON.stringify(val));
+    } catch (e) { return null; }
+  }
+  function loadState() {
+    var ws = null;
+    try { ws = window.zcode && window.zcode.widgetState || null; } catch (e) { ws = null; }
+    if (!ws) ws = localCfg("get");
+    if (!ws) return;
+    ["privateContent", "modelContent"].forEach(function (f) {
+      var src = ws[f]; if (!src) return;
+      if (src.wallpaper) mergeWp(src.wallpaper, S.wallpaper);
+      if (src.theme) Object.assign(S.theme, pick(src.theme, S.theme));
+      if (src.dock) Object.assign(S.dock, pick(src.dock, S.dock));
+      if (src.screens) Object.assign(S.screens, pick(src.screens, S.screens));
+      if (src.widgets) Object.keys(S.widgets).forEach(function (k) {
+        if (src.widgets[k]) Object.assign(S.widgets[k], pick(src.widgets[k], S.widgets[k]));
+      });
+      if (Array.isArray(src.todo)) S.todo = src.todo.slice(0, 20).map(function (t) {
+        return { text: String(t && t.text || "").slice(0, 80), done: !!(t && t.done) };
+      }).filter(function (t) { return t.text; });
+      if (typeof src.note === "string") S.note = src.note.slice(0, 400);
+      if (typeof src.vw === "number") S.vw = clamp(src.vw, 0, 2000);
+      if (typeof src.autoDay === "boolean") S.autoDay = src.autoDay;
+      if (src.rotate === 0 || src.rotate === 60 || src.rotate === 300) S.rotate = src.rotate;
+      if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
+        return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
+      }).filter(function (p) { return p.snap; });
+      if (src.icons && typeof src.icons === "object") {
+        ["pc", "docs", "photos", "trash"].forEach(function (k) {
+          var v = src.icons[k];
+          if (v && typeof v === "object") S.icons[k] = { label: String(v.label || "").slice(0, 12), emoji: typeof v.emoji === "string" ? v.emoji.slice(0, 4) : "", off: !!v.off };
+        });
+      }
+    });
+    ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
+  }
+
+  var saveT = 0;
+  function persist(imm) {
+    if (booting) return;
+    if (saveT) { clearTimeout(saveT); saveT = 0; }
+    var go = function () {
+      var model = {
+        wallpaper: {
+          main: { style: S.wallpaper.main.style, hue: S.wallpaper.main.hue },
+          second: { style: S.wallpaper.second.style, hue: S.wallpaper.second.hue },
+          span: { on: S.wallpaper.span.on, style: S.wallpaper.span.style, hue: S.wallpaper.span.hue }
+        },
+        theme: { mode: S.theme.mode, accent: S.theme.accent },
+        screens: { secondOn: S.screens.secondOn, r1: S.screens.r1, r2: S.screens.r2 }
+      };
+      var priv = {
+        wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
+        widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
+        autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons
+      };
+      try {
+        if (window.zcode && window.zcode.setWidgetState) {
+          window.zcode.setWidgetState({ modelContent: model, privateContent: priv }).catch(function () {});
+        }
+      } catch (e) {}
+      localCfg("set", { modelContent: model, privateContent: priv });
+      refreshExport();
+    };
+    if (imm) go(); else saveT = setTimeout(go, 400);
+  }
+
+  /* ---------------- utils ---------------- */
+  function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  function mulberry32(a) {
+    a = a >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var toastT = 0;
+  function toast(msg) {
+    var el = $("ds-toast");
+    el.textContent = msg;
+    el.classList.add("is-show");
+    if (toastT) clearTimeout(toastT);
+    toastT = setTimeout(function () { el.classList.remove("is-show"); }, 2600);
+  }
+
+  /* ---------------- wallpaper engine (same as v1) ---------------- */
+  function drawWallpaper(ctx, w, h, p) {
+    var rnd = mulberry32((p.seed || 1) * 977 + 13);
+    var hue = ((p.hue % 360) + 360) % 360;
+    var i, x, y, r, g;
+    if (p.style === "aurora") {
+      g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "hsl(" + hue + ",42%,8%)");
+      g.addColorStop(1, "hsl(" + ((hue + 40) % 360) + ",48%,15%)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "screen";
+      for (i = 0; i < 6; i++) {
+        x = w * (0.1 + rnd() * 0.8); y = h * (0.05 + rnd() * 0.7);
+        r = h * (0.35 + rnd() * 0.5);
+        var hueOff = (hue + 300 + rnd() * 140) % 360;
+        g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, "hsla(" + hueOff + ",85%,58%," + (0.16 + rnd() * 0.18).toFixed(3) + ")");
+        g.addColorStop(1, "hsla(" + hueOff + ",85%,58%,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+      ctx.fillStyle = "#fff";
+      for (i = 0; i < 140; i++) {
+        ctx.globalAlpha = 0.06 + rnd() * 0.3;
+        ctx.fillRect(rnd() * w, rnd() * h * 0.8, 1.1, 1.1);
+      }
+      ctx.globalAlpha = 1;
+    }
+    if (p.style === "mesh") {
+      g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "hsl(" + hue + ",34%,95%)");
+      g.addColorStop(1, "hsl(" + ((hue + 30) % 360) + ",40%,88%)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      for (i = 0; i < 7; i++) {
+        x = rnd() * w; y = rnd() * h; r = Math.min(w, h) * (0.28 + rnd() * 0.4);
+        var h2 = (hue + 320 + rnd() * 100) % 360;
+        g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, "hsla(" + h2 + ",72%," + (70 + rnd() * 14).toFixed(0) + "%,0.55)");
+        g.addColorStop(1, "hsla(" + h2 + ",72%,80%,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (p.style === "dune") {
+      g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "hsl(" + hue + ",62%,72%)");
+      g.addColorStop(0.55, "hsl(" + ((hue + 18) % 360) + ",66%,80%)");
+      g.addColorStop(1, "hsl(" + ((hue + 34) % 360) + ",52%,86%)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      x = w * 0.68; y = h * 0.4;
+      g = ctx.createRadialGradient(x, y, 0, x, y, h * 0.32);
+      g.addColorStop(0, "hsla(45,95%,82%,0.95)");
+      g.addColorStop(0.28, "hsla(45,95%,78%,0.55)");
+      g.addColorStop(1, "hsla(45,95%,78%,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, h * 0.32, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "hsl(42,90%,88%)";
+      ctx.beginPath(); ctx.arc(x, y, h * 0.085, 0, Math.PI * 2); ctx.fill();
+      for (i = 0; i < 4; i++) {
+        var base = h * (0.52 + i * 0.13);
+        ctx.fillStyle = "hsl(" + ((hue + 6 + i * 7) % 360) + "," + (38 + i * 4) + "%," + (34 - i * 6) + "%)";
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        ctx.lineTo(0, base);
+        var px = 0, py = base;
+        for (var s = 1; s <= 6; s++) {
+          var nx = (w / 6) * s;
+          var ny = base + Math.sin(s * (1.1 + i * 0.5) + i * 2.2) * h * (0.035 + i * 0.012);
+          ctx.quadraticCurveTo((px + nx) / 2, py + (rnd() - 0.5) * h * 0.03, nx, ny);
+          px = nx; py = ny;
+        }
+        ctx.lineTo(w, h);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    if (p.style === "starfield") {
+      g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "hsl(" + hue + ",45%,5%)");
+      g.addColorStop(1, "hsl(" + ((hue + 25) % 360) + ",40%,10%)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "screen";
+      for (i = 0; i < 2; i++) {
+        x = w * (0.2 + rnd() * 0.6); y = h * (0.15 + rnd() * 0.5); r = h * (0.4 + rnd() * 0.35);
+        var nh = (hue + 280 + rnd() * 120) % 360;
+        g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, "hsla(" + nh + ",70%,52%,0.16)");
+        g.addColorStop(1, "hsla(" + nh + ",70%,52%,0)");
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalCompositeOperation = "source-over";
+      for (i = 0; i < 340; i++) {
+        ctx.globalAlpha = 0.15 + rnd() * 0.8;
+        var sz = rnd() < 0.06 ? 2 : 1;
+        ctx.fillStyle = rnd() < 0.12 ? "hsl(210,60%,80%)" : "#fff";
+        ctx.fillRect(rnd() * w, rnd() * h, sz, sz);
+      }
+      ctx.globalAlpha = 1;
+      x = w * 0.74; y = h * 0.62; r = h * 0.17;
+      g = ctx.createRadialGradient(x - r * 0.5, y - r * 0.5, r * 0.2, x, y, r);
+      g.addColorStop(0, "hsl(" + ((hue + 15) % 360) + ",30%,26%)");
+      g.addColorStop(1, "hsl(" + hue + ",35%,9%)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "hsla(" + ((hue + 200) % 360) + ",80%,75%,0.5)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(x, y, r + 2.5, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    }
+    if (p.style === "mono") {
+      ctx.fillStyle = "hsl(" + hue + ",22%,93%)";
+      ctx.fillRect(0, 0, w, h);
+      x = w * 0.66; y = h * 0.36; r = Math.min(w, h) * 0.21;
+      g = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+      g.addColorStop(0, "hsl(" + hue + ",52%,74%)");
+      g.addColorStop(1, "hsl(" + ((hue + 24) % 360) + ",48%,62%)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "hsla(" + hue + ",30%,32%,0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(0, h * 0.66); ctx.lineTo(w, h * 0.66); ctx.stroke();
+      ctx.fillStyle = "hsl(" + hue + ",26%,86%)";
+      ctx.fillRect(0, h * 0.66, w, h * 0.34);
+      ctx.strokeStyle = "hsla(" + hue + ",30%,40%,0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(w * 0.2, h * 0.66, r * 0.42, Math.PI, Math.PI * 2); ctx.stroke();
+    }
+  }
+  function baseColor(style, hue) {
+    if (style === "mesh") return "hsl(" + hue + ",34%,95%)";
+    if (style === "dune") return "hsl(" + hue + ",62%,72%)";
+    if (style === "mono") return "hsl(" + hue + ",22%,93%)";
+    return "hsl(" + hue + ",44%,8%)";
+  }
+
+  var stage = $("ds-stage");
+  var vwrap = $("ds-vwrap");
+  var scr0 = $("ds-scr0"), scr1 = $("ds-scr1");
+  var wall0 = $("ds-wall0"), wall1 = $("ds-wall1");
+
+  function metrics() {
+    var pad = 18, gap = 22, capH = 24;
+    var sw = stage.clientWidth;
+    var secondOn = S.screens.secondOn;
+    var r1 = S.screens.r1, r2 = secondOn ? S.screens.r2 : 0;
+    var stacked = secondOn && (sw - pad * 2 - gap) / (r1 + r2) < 360;
+    var availW = sw - pad * 2 - (secondOn && !stacked ? gap : 0);
+    var H, H1, w0, w1, x0, x1, y0, y1;
+    if (!secondOn) {
+      H = Math.min(520, availW / r1);
+      w0 = Math.round(H * r1); w1 = 0;
+      x0 = pad + Math.floor((availW - w0) / 2); x1 = 0; y0 = pad; y1 = 0;
+    } else if (stacked) {
+      w0 = w1 = availW;
+      H = clamp(w0 / r1, 200, 320);
+      H1 = clamp(w1 / r2, 240, 480);
+      x0 = x1 = pad; y0 = pad; y1 = pad + Math.round(H) + gap + 6;
+    } else {
+      H = Math.min(520, availW / (r1 + r2));
+      H1 = H;
+      w0 = Math.round(H * r1); w1 = Math.round(H * r2);
+      var totalW = w0 + w1;
+      x0 = pad + Math.max(0, Math.floor((availW - totalW) / 2));
+      x1 = x0 + w0 + gap; y0 = pad; y1 = pad;
+    }
+    if (!secondOn) H1 = H;
+    var stageH = secondOn && stacked
+      ? y1 + Math.round(H1) + capH + pad - 6
+      : pad + Math.round(H) + capH + pad - 6;
+    return { H: Math.round(H), H1: Math.round(H1), w0: w0, w1: w1, x0: x0, x1: x1, y0: y0, y1: y1, secondOn: secondOn, stacked: stacked, stageH: stageH };
+  }
+
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function drawSlice(canvas, m, si) {
+    var overscan = 22;
+    var cx = si === 0 ? m.x0 : m.x1;
+    var cw = (si === 0 ? m.w0 : m.w1) + overscan * 2;
+    var chh = (si === 0 ? m.H : (m.H1 || m.H)) + overscan * 2;
+    canvas.width = Math.max(2, Math.round(cw * dpr));
+    canvas.height = Math.max(2, Math.round(chh * dpr));
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var span = S.wallpaper.span.on && m.secondOn;
+    var params = span ? S.wallpaper.span : S.wallpaper[si === 0 ? "main" : "second"];
+    if (span) {
+      var Wtot = m.w0 + m.w1;
+      var off = (cx - m.x0) - overscan;
+      var spanH = Math.max(m.H, m.H1 || m.H);
+      ctx.fillStyle = baseColor(params.style, params.hue);
+      ctx.fillRect(0, 0, cw, chh);
+      ctx.save();
+      ctx.translate(-off, overscan);
+      drawWallpaper(ctx, Wtot, spanH, params);
+      ctx.restore();
+    } else {
+      drawWallpaper(ctx, cw, chh, params);
+    }
+    canvas.style.filter = "blur(" + (params.dim && params.blur ? params.blur : 0) + "px) brightness(" + (1 - (params.dim || 0) / 100).toFixed(3) + ")";
+    canvas.setAttribute("aria-label", (si === 0 ? "主屏" : "副屏") + "壁纸：" + (span ? "跨屏全景·" : "") + (STYLE_NAMES[params.style] || params.style) + "风格");
+    updateFx(canvas, m, si, params);
+  }
+  function renderWalls() {
+    var m = metrics();
+    drawSlice(wall0, m, 0);
+    if (m.secondOn) drawSlice(wall1, m, 1);
+  }
+
+  function renderPreviews() {
+    var p = S.wallpaper[targetKey()];
+    WALL_STYLES.forEach(function (st, idx) {
+      var cv = $("ds-pv-" + st);
+      if (!cv) return;
+      drawWallpaper(cv.getContext("2d"), cv.width, cv.height, { style: st, hue: p.hue, seed: 3 + idx * 4, dim: 0 });
+    });
+  }
+
+  /* ---------------- screens geometry ---------------- */
+  var autoHidden = {}, wasStacked = false, pendingRebalance = false;
+  function applyScreens() {
+    var m = metrics();
+    stage.style.height = m.stageH + "px";
+    scr0.style.left = m.x0 + "px"; scr0.style.top = m.y0 + "px";
+    scr0.style.width = m.w0 + "px"; scr0.style.height = m.H + "px";
+    scr1.hidden = !m.secondOn;
+    if (m.secondOn) {
+      scr1.style.left = m.x1 + "px"; scr1.style.top = m.y1 + "px";
+      scr1.style.width = m.w1 + "px"; scr1.style.height = (m.H1 || m.H) + "px";
+    }
+    var sw = stage.clientWidth;
+    var tier = sw < 430 ? "xs" : sw < 620 ? "narrow" : sw < 1000 ? "mid" : "wide";
+    root.dataset.size = tier;
+    var needBalance = false;
+    if (m.stacked && !wasStacked) {
+      wasStacked = true;
+      ["monitor", "weather", "todo"].forEach(function (k) {
+        if (S.widgets[k].on && !S.widgets[k].userOff) { S.widgets[k].on = false; autoHidden[k] = true; needBalance = true; }
+      });
+      var rr = screenRects();
+      var rc = rr[rr.length - 1];
+      if (S.widgets.calendar.on && rc) { S.widgets.calendar.x = rc.x + rc.w / 2 - 100; S.widgets.calendar.y = rc.y + 60; needBalance = true; }
+    } else if (!m.stacked && wasStacked) {
+      wasStacked = false;
+      Object.keys(autoHidden).forEach(function (k) { S.widgets[k].on = true; delete autoHidden[k]; needBalance = true; });
+      autoHidden = {};
+      var rs2 = screenRects();
+      Object.keys(S.widgets).forEach(function (k) {
+        var r = rs2[Math.min(HOME_SI[k] || 0, rs2.length - 1)];
+        S.widgets[k].x = Math.round(r.x + r.w / 2 - ww() / 2);
+        S.widgets[k].y = Math.round(r.y + 60);
+      });
+      needBalance = true;
+    }
+    if (needBalance) { applyVisibility(); pendingRebalance = true; }
+    var stw = $("ds-studio");
+    if (sw < 620) {
+      stw.style.left = "10px"; stw.style.right = "10px"; stw.style.top = "auto"; stw.style.bottom = "10px"; stw.style.width = "auto";
+    } else if (sw < 1000) {
+      stw.style.left = "auto"; stw.style.right = "12px"; stw.style.top = "16px"; stw.style.bottom = "auto"; stw.style.width = "";
+    } else {
+      stw.style.left = "auto"; stw.style.top = "16px"; stw.style.bottom = "auto"; stw.style.width = "";
+      stw.style.right = ((m.secondOn && !m.stacked) ? (m.w1 + 52) : 16) + "px";
+    }
+    var cap0 = $("ds-cap0"), cap1 = $("ds-cap1");
+    cap0.hidden = false;
+    cap0.style.left = m.x0 + "px"; cap0.style.top = (m.y0 + m.H + 6) + "px"; cap0.style.width = m.w0 + "px";
+    cap0.innerHTML = "<b>主屏</b> · " + (RATIO_NAMES[String(S.screens.r1)] || S.screens.r1) + (S.wallpaper.span.on && m.secondOn ? " · 跨屏全景" : "");
+    cap1.hidden = !m.secondOn;
+    if (m.secondOn) {
+      cap1.style.left = m.x1 + "px"; cap1.style.top = ((m.stacked ? m.y1 : m.y0) + (m.H1 || m.H) + 6) + "px"; cap1.style.width = m.w1 + "px";
+      cap1.innerHTML = "<b>副屏</b> · " + (RATIO_NAMES[String(S.screens.r2)] || S.screens.r2);
+    }
+    applyDock();
+    return m;
+  }
+
+  /* ---------------- theme ---------------- */
+  var SWATCHES = ["#7aa2ff", "#a78bfa", "#2dd4bf", "#f472b6", "#fb923c", "#4ade80"];
+  function applyTheme() {
+    root.style.setProperty("--acc", S.theme.accent);
+    root.style.setProperty("--rad", S.theme.radius + "px");
+    root.style.setProperty("--blur", S.theme.glass + "px");
+    root.style.setProperty("--wscale", (S.theme.widgetScale || 100) / 100);
+    root.style.setProperty("--walpha", (S.theme.widgetAlpha || 100) / 100);
+    root.dataset.perf = S.theme.perf ? "1" : "0";
+    root.dataset.mode = S.theme.mode;
+  }
+  function buildSwatches() {
+    var box = $("ds-swatches");
+    box.innerHTML = "";
+    SWATCHES.forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "ds-swatch cursor-interaction";
+      b.style.background = c; b.dataset.c = c;
+      b.setAttribute("aria-label", "强调色 " + c);
+      b.addEventListener("click", function () { setAccent(c); });
+      box.appendChild(b);
+    });
+    var inp = document.createElement("input");
+    inp.type = "color"; inp.id = "ds-accent-in"; inp.value = S.theme.accent;
+    inp.setAttribute("aria-label", "自定义强调色");
+    inp.addEventListener("input", function () { setAccent(inp.value, true); });
+    box.appendChild(inp);
+  }
+  function setAccent(c, skipSync) {
+    S.theme.accent = c;
+    applyTheme(); persist();
+    if (!skipSync) syncThemeUI(); else syncSwatchSel();
+  }
+  function syncSwatchSel() {
+    root.querySelectorAll(".ds-swatch").forEach(function (b) {
+      b.classList.toggle("is-on", b.dataset.c.toLowerCase() === S.theme.accent.toLowerCase());
+    });
+    var inp = $("ds-accent-in");
+    if (inp) inp.value = S.theme.accent;
+  }
+  function syncSeg(id, val) {
+    root.querySelectorAll("#" + id + " button").forEach(function (b) {
+      var on = b.dataset.v === String(val);
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+  function syncThemeUI() {
+    syncSeg("ds-mode", S.theme.mode);
+    syncSwatchSel();
+    $("ds-glass").value = S.theme.glass;
+    $("ds-glass-v").textContent = S.theme.glass + "px";
+    $("ds-radius").value = S.theme.radius;
+    $("ds-radius-v").textContent = S.theme.radius + "px";
+    $("ds-widgetscale").value = S.theme.widgetScale || 100;
+    $("ds-widgetscale-v").textContent = (S.theme.widgetScale || 100) + "%";
+    $("ds-widgetalpha").value = S.theme.widgetAlpha || 100;
+    $("ds-widgetalpha-v").textContent = (S.theme.widgetAlpha || 100) + "%";
+    $("ds-perf").checked = !!S.theme.perf;
+  }
+
+  /* ---------------- widgets ---------------- */
+  var WIDGETS = {};
+  ["clock", "weather", "monitor", "calendar", "todo", "note"].forEach(function (k) {
+    WIDGETS[k] = root.querySelector('.ds-widget[data-w="' + k + '"]');
+  });
+  var zTop = 10;
+  function bringFront(el) { el.style.zIndex = ++zTop; }
+  function ww() { return (WIDGETS.clock && WIDGETS.clock.offsetWidth) || 232; }
+
+  function screenRects() {
+    var m = metrics();
+    var arr = [{ x: m.x0, y: m.y0, w: m.w0, h: m.H }];
+    if (m.secondOn) arr.push({ x: m.x1, y: m.y1, w: m.w1, h: m.H1 || m.H });
+    return arr;
+  }
+  function rectCenter(r) { return { x: r.x + r.w / 2, y: r.y + r.h / 2 }; }
+  function nearestRect(px, py) {
+    var rs = screenRects(), best = rs[0], bd = Infinity;
+    rs.forEach(function (r) {
+      var c = rectCenter(r);
+      var d = (c.x - px) * (c.x - px) + (c.y - py) * (c.y - py);
+      if (d < bd) { bd = d; best = r; }
+    });
+    return best;
+  }
+  function containingRect(px, py) {
+    var rs = screenRects();
+    for (var i = 0; i < rs.length; i++) {
+      var r = rs[i];
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return r;
+    }
+    return null;
+  }
+  function clampToRect(el, r, x, y) {
+    return {
+      x: clamp(x, r.x + 6, Math.max(r.x + 6, r.x + r.w - el.offsetWidth - 6)),
+      y: clamp(y, r.y + 34, Math.max(r.y + 34, r.y + r.h - el.offsetHeight - 8))
+    };
+  }
+  function clampWidgets() {
+    if (stage.clientWidth < 120) return;
+    var orphan = false;
+    Object.keys(WIDGETS).forEach(function (k) {
+      var el = WIDGETS[k];
+      if (!S.widgets[k].on) return;
+      var nullPos = S.widgets[k].x == null;
+      var cx = nullPos ? null : S.widgets[k].x + el.offsetWidth / 2;
+      var cy = nullPos ? null : S.widgets[k].y + el.offsetHeight / 2;
+      var r = nullPos ? null : containingRect(cx, cy);
+      if (nullPos || !r) { orphan = true; return; }
+      var pos = clampToRect(el, r, S.widgets[k].x, S.widgets[k].y);
+      S.widgets[k].x = Math.round(pos.x); S.widgets[k].y = Math.round(pos.y);
+      el.style.left = pos.x + "px"; el.style.top = pos.y + "px";
+    });
+    if (orphan) autoBalanceLayout();
+  }
+
+  var DEFAULT_MAP = {
+    0: [["monitor", "weather"], ["clock", "calendar"]],
+    1: [["todo", "note"]]
+  };
+  var HOME_SI = {};
+  Object.keys(DEFAULT_MAP).forEach(function (si) {
+    DEFAULT_MAP[si].forEach(function (col) {
+      col.forEach(function (k) { HOME_SI[k] = +si; });
+    });
+  });
+  var ORDER = ["clock", "calendar", "weather", "monitor", "todo", "note"];
+  function autoBalanceLayout() {
+    var rs = screenRects();
+    var slots = [];
+    rs.forEach(function (r, si) {
+      if (r.w >= 560) {
+        slots.push({ r: r, si: si, x: r.x + 16 + (si === 0 && r.w >= 700 ? 74 : 0), items: [], h: 0 });
+        slots.push({ r: r, si: si, x: r.x + r.w - ww() - 16, items: [], h: 0 });
+      } else {
+        slots.push({ r: r, si: si, x: r.x + Math.max(14, Math.round((r.w - ww()) / 2)), items: [], h: 0 });
+      }
+    });
+    ORDER.forEach(function (k) {
+      if (!S.widgets[k] || !S.widgets[k].on) return;
+      var el = WIDGETS[k];
+      var h = el.offsetHeight || 120;
+      var cx = S.widgets[k].x == null ? null : S.widgets[k].x + el.offsetWidth / 2;
+      var cy = S.widgets[k].y == null ? null : S.widgets[k].y + el.offsetHeight / 2;
+      var homeSi = -1;
+      if (cx != null && cy != null) {
+        for (var i = 0; i < rs.length; i++) {
+          if (cx >= rs[i].x && cx <= rs[i].x + rs[i].w && cy >= rs[i].y && cy <= rs[i].y + rs[i].h) { homeSi = i; break; }
+        }
+      }
+      if (homeSi < 0) homeSi = HOME_SI[k] || 0;
+      var pool = slots.filter(function (s) { return s.si === homeSi; });
+      if (!pool.length) pool = slots;
+      var best = pool[0];
+      pool.forEach(function (s) { if (s.h < best.h) best = s; });
+      best.items.push({ k: k, h: h });
+      best.h += h + 14;
+    });
+    slots.forEach(function (s) {
+      var n = s.items.length;
+      var sumH = s.items.reduce(function (a, it) { return a + it.h; }, 0);
+      var availH = s.r.h - 40 - 12;
+      var gap = n > 1 ? Math.floor(Math.min(14, Math.max(5, (availH - sumH) / (n - 1)))) : 0;
+      var y = s.r.y + 40;
+      s.items.forEach(function (it) {
+        var el = WIDGETS[it.k];
+        el.style.left = s.x + "px"; el.style.top = y + "px";
+        S.widgets[it.k].x = Math.round(s.x);
+        S.widgets[it.k].y = Math.round(y);
+        y += it.h + gap;
+      });
+    });
+  }
+  function placeNew(k) {
+    var el = WIDGETS[k];
+    var home = null, homeCi = 0;
+    Object.keys(DEFAULT_MAP).forEach(function (si) {
+      DEFAULT_MAP[si].forEach(function (col, ci) {
+        if (col.indexOf(k) >= 0) { home = screenRects()[Math.min(+si, screenRects().length - 1)]; homeCi = ci; }
+      });
+    });
+    var r = home || screenRects()[0];
+    var twoCol = r.w >= 560;
+    var x = twoCol
+      ? (homeCi === 0 && r === screenRects()[0] && r.w >= 700 ? r.x + 90 : r.x + r.w - ww() - 16)
+      : r.x + Math.max(14, Math.round((r.w - ww()) / 2));
+    var y = r.y + 40;
+    Object.keys(WIDGETS).forEach(function (other) {
+      if (other === k || !S.widgets[other].on) return;
+      var o = WIDGETS[other];
+      var ox = parseFloat(o.style.left) || 0;
+      if (Math.abs(ox - x) < 30) y = Math.max(y, (parseFloat(o.style.top) || 0) + o.offsetHeight + 14);
+    });
+    var pos = clampToRect(el, r, x, y);
+    S.widgets[k].x = Math.round(pos.x); S.widgets[k].y = Math.round(pos.y);
+    el.style.left = pos.x + "px"; el.style.top = pos.y + "px";
+  }
+  function applyVisibility() {
+    Object.keys(WIDGETS).forEach(function (k) {
+      WIDGETS[k].hidden = !S.widgets[k].on;
+      var t = root.querySelector('[data-wtoggle="' + k + '"]');
+      if (t) t.checked = S.widgets[k].on;
+    });
+  }
+  function setWidgetOn(k, on) {
+    S.widgets[k].on = on;
+    if (on) { delete S.widgets[k].userOff; if (S.widgets[k].x == null) placeNew(k); }
+    else S.widgets[k].userOff = true;
+    applyVisibility();
+    persist();
+  }
+
+  Object.keys(WIDGETS).forEach(function (k) {
+    var el = WIDGETS[k];
+    el.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("input,textarea,button")) return;
+      if (e.button !== 0) return;
+      e.preventDefault();
+      bringFront(el);
+      var sx = e.clientX, sy = e.clientY;
+      var ox = parseFloat(el.style.left) || 0, oy = parseFloat(el.style.top) || 0;
+      var stageRect = stage.getBoundingClientRect();
+      var moved = false;
+      var curRect = null;
+      var move = function (ev) {
+        var gx = ox + ev.clientX - sx, gy = oy + ev.clientY - sy;
+        var px = ev.clientX - stageRect.left, py = ev.clientY - stageRect.top;
+        var r = containingRect(px, py) || curRect || nearestRect(gx + el.offsetWidth / 2, gy + el.offsetHeight / 2);
+        curRect = r;
+        var pos = clampToRect(el, r, gx, gy);
+        el.style.left = pos.x + "px"; el.style.top = pos.y + "px";
+        moved = true;
+      };
+      var up = function () {
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        if (moved) {
+          S.widgets[k].x = Math.round(parseFloat(el.style.left));
+          S.widgets[k].y = Math.round(parseFloat(el.style.top));
+          var r = containingRect(S.widgets[k].x + el.offsetWidth / 2 - stageRect.left, S.widgets[k].y + el.offsetHeight / 2 - stageRect.top);
+          if (r) {
+            var wasSecond = S.widgets[k].scr;
+            S.widgets[k].scr = r === screenRects()[1] ? 1 : 0;
+            if (wasSecond !== undefined && wasSecond !== S.widgets[k].scr) toast(S.widgets[k].scr === 1 ? "已移动到副屏 ✓" : "已移动到主屏 ✓");
+          }
+          persist(true);
+        }
+      };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+      try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+  });
+
+  /* ---------------- clock / calendar / monitor / todo / note ---------------- */
+  var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function tickClock() {
+    var d = new Date();
+    var hm = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    var full = (d.getMonth() + 1) + "月" + d.getDate() + "日 " + WEEK[d.getDay()];
+    $("ds-clock-time").textContent = hm;
+    $("ds-clock-date").textContent = full;
+    $("ds-mb-time0").textContent = full + " " + hm;
+    $("ds-mb-time1").textContent = hm;
+    if (lockEl && !lockEl.hidden) updateLockTime();
+  }
+  function renderCal() {
+    var now = new Date();
+    var y = now.getFullYear(), m = now.getMonth(), today = now.getDate();
+    $("ds-cal-title").textContent = y + " 年 " + (m + 1) + " 月";
+    var grid = $("ds-cal-grid");
+    grid.innerHTML = "";
+    var startCol = (new Date(y, m, 1).getDay() + 6) % 7;
+    var prevDays = new Date(y, m, 0).getDate();
+    var day = 1, nextDay = 1;
+    for (var i = 0; i < 42; i++) {
+      var sp = document.createElement("span");
+      if (i < startCol) { sp.textContent = prevDays - startCol + 1 + i; sp.className = "ds-out"; }
+      else if (day <= new Date(y, m + 1, 0).getDate()) {
+        sp.textContent = day;
+        if (day === today) sp.className = "ds-today";
+        day++;
+      } else { sp.textContent = nextDay++; sp.className = "ds-out"; }
+      grid.appendChild(sp);
+    }
+  }
+  var monVals = { cpu: 34, ram: 52, net: 28 };
+  function tickMonitor() {
+    ["cpu", "ram", "net"].forEach(function (k) {
+      monVals[k] = clamp(monVals[k] + (Math.random() - 0.5) * 16, 8, 92);
+      $("ds-m-" + k).style.width = monVals[k].toFixed(0) + "%";
+      $("ds-m-" + k + "-v").textContent = k === "net" ? (monVals[k] / 8).toFixed(1) + " MB/s" : monVals[k].toFixed(0) + "%";
+    });
+  }
+  function renderTodo() {
+    var list = $("ds-todo-list");
+    list.innerHTML = "";
+    S.todo.forEach(function (t, i) {
+      var item = document.createElement("div");
+      item.className = "ds-todo-item cursor-interaction" + (t.done ? " is-done" : "");
+      item.setAttribute("role", "checkbox");
+      item.setAttribute("aria-checked", t.done ? "true" : "false");
+      item.setAttribute("aria-label", t.text);
+      var tick = document.createElement("span"); tick.className = "ds-tick";
+      var txt = document.createElement("span"); txt.className = "ds-todo-text"; txt.textContent = t.text;
+      var del = document.createElement("button"); del.type = "button"; del.className = "ds-todo-del cursor-interaction"; del.textContent = "×"; del.setAttribute("aria-label", "删除：" + t.text);
+      item.appendChild(tick); item.appendChild(txt); item.appendChild(del);
+      item.addEventListener("click", function (e) {
+        if (e.target === del) { S.todo.splice(i, 1); renderTodo(); persist(true); return; }
+        t.done = !t.done; renderTodo(); persist();
+      });
+      list.appendChild(item);
+    });
+    var left = S.todo.filter(function (t) { return !t.done; }).length;
+    $("ds-todo-count").textContent = left ? left + " 项待完成" : "都完成啦";
+  }
+  $("ds-todo-add").addEventListener("click", function () {
+    var inp = $("ds-todo-in");
+    var v = inp.value.trim();
+    if (!v) { inp.focus(); return; }
+    if (S.todo.length >= 20) { toast("待办最多 20 条，先完成几件吧"); return; }
+    S.todo.unshift({ text: v.slice(0, 80), done: false });
+    inp.value = "";
+    renderTodo(); persist(true);
+  });
+  $("ds-todo-in").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); $("ds-todo-add").click(); }
+  });
+  $("ds-note").addEventListener("input", function () {
+    S.note = $("ds-note").value.slice(0, 400);
+    persist();
+  });
+  root.querySelectorAll("[data-ic]").forEach(function (ic) {
+    ic.addEventListener("click", function (e) {
+      root.querySelectorAll("[data-ic]").forEach(function (o) { o.classList.remove("is-sel"); });
+      ic.classList.add("is-sel");
+      openIcEdit(ic.dataset.ic, ic);
+      e.stopPropagation();
+    });
+  });
+  stage.addEventListener("click", function (e) {
+    if (!icedit.hidden && !e.target.closest(".ds-icedit") && !e.target.closest("[data-ic]")) icedit.hidden = true;
+  });
+
+  /* ---------------- dock ---------------- */
+  var DOCK_APPS = [
+    { id: "browser", icon: "compass", name: "浏览器" },
+    { id: "mail", icon: "mail", name: "邮件" },
+    { id: "music", icon: "music", name: "音乐" },
+    { id: "photos", icon: "image", name: "照片" },
+    { id: "calapp", icon: "calendar-days", name: "日历" },
+    { id: "term", icon: "terminal", name: "终端" },
+    { sep: true },
+    { id: "focus", icon: "eye-off", name: "专注模式" },
+    { id: "lock", icon: "lock", name: "锁屏预览" },
+    { id: "studio", icon: "settings", name: "AURA 工坊" },
+    { id: "trash", icon: "trash-2", name: "废纸篓" }
+  ];
+  var docks = [$("ds-dock0"), $("ds-dock1")];
+  function buildDock(container) {
+    container.innerHTML = "";
+    DOCK_APPS.forEach(function (a) {
+      if (a.sep) {
+        var sep = document.createElement("div");
+        sep.className = "ds-dock-sep";
+        container.appendChild(sep);
+        return;
+      }
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ds-dock-item cursor-interaction" + (a.id === "studio" ? " is-studio" : "");
+      b.setAttribute("data-tooltip", a.name);
+      b.setAttribute("aria-label", a.name);
+      var i = document.createElement("i");
+      i.setAttribute("data-lucide", a.icon);
+      i.setAttribute("aria-hidden", "true");
+      b.appendChild(i);
+      b.addEventListener("click", function () {
+        if (a.id === "studio") { toggleStudio(); return; }
+        if (a.id === "focus") { toggleFocus(); return; }
+        if (a.id === "lock") { toggleLock(); return; }
+        b.classList.remove("ds-bounce");
+        void b.offsetWidth;
+        b.classList.add("ds-bounce");
+      });
+      container.appendChild(b);
+    });
+  }
+  function applyDock() {
+    var m = metrics();
+    var rs = screenRects();
+    docks.forEach(function (dock, si) {
+      var r = rs[Math.min(si, rs.length - 1)];
+      var visible = S.dock.mode === "dual" || (S.dock.mode === "main" && si === 0) || (S.dock.mode === "second" && si === 1);
+      dock.hidden = !visible || !m.secondOn && si === 1;
+      if (dock.hidden) return;
+      var fit = clamp(Math.floor((r.w - 77) / 8), 24, S.dock.size);
+      dock.style.setProperty("--dock-size", fit + "px");
+      var dw = fit * 8 + 65;
+      dock.style.left = Math.round(r.x + (r.w - dw) / 2) + "px";
+      dock.style.top = Math.round(r.y + r.h - fit - 20) + "px";
+    });
+    $("ds-icons").classList.toggle("ds-icons-off", false);
+  }
+  var magCenters = null, magRaf = 0, magDock = null;
+  function dockCenters(dock) {
+    var vr = dock.getBoundingClientRect();
+    var arr = [];
+    dock.querySelectorAll(".ds-dock-item").forEach(function (it) {
+      arr.push({ el: it, c: vr.left + it.offsetLeft + it.offsetWidth / 2 });
+    });
+    return arr;
+  }
+  docks.forEach(function (dock) {
+    dock.addEventListener("pointerenter", function () {
+      if (!S.dock.magnify) return;
+      dock.querySelectorAll(".ds-dock-item").forEach(function (it) { it.style.transition = "none"; });
+      magCenters = dockCenters(dock); magDock = dock;
+    });
+    dock.addEventListener("pointermove", function (e) {
+      if (!S.dock.magnify || !magCenters || magDock !== dock) return;
+      cancelAnimationFrame(magRaf);
+      magRaf = requestAnimationFrame(function () {
+        magCenters.forEach(function (mm) {
+          var d = Math.abs(e.clientX - mm.c);
+          var s = 1 + 0.42 * Math.exp(-(d * d) / (2 * 52 * 52));
+          mm.el.style.transform = "translateY(" + (-(s - 1) * 30).toFixed(1) + "px) scale(" + s.toFixed(3) + ")";
+        });
+      });
+    });
+    dock.addEventListener("pointerleave", function () {
+      cancelAnimationFrame(magRaf);
+      magCenters = null; magDock = null;
+      dock.querySelectorAll(".ds-dock-item").forEach(function (it) {
+        it.style.transition = "";
+        it.style.transform = "";
+      });
+    });
+  });
+
+  /* ---------------- studio ---------------- */
+  var studio = $("ds-studio");
+  var wTarget = "main";
+  function targetKey() { return wTarget === "span" ? "span" : wTarget; }
+  function toggleStudio(force) {
+    var show = typeof force === "boolean" ? force : studio.hidden;
+    studio.hidden = !show;
+    if (show) { refreshExport(); toast("欢迎来到 AURA 双屏工坊 ✨"); }
+  }
+  $("ds-studio-close").addEventListener("click", function () { toggleStudio(false); });
+  root.querySelectorAll(".ds-sttab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      root.querySelectorAll(".ds-sttab").forEach(function (o) { o.classList.remove("is-on"); o.setAttribute("aria-selected", "false"); });
+      t.classList.add("is-on"); t.setAttribute("aria-selected", "true");
+      root.querySelectorAll(".ds-pane").forEach(function (p) { p.hidden = p.dataset.p !== t.dataset.t; });
+      if (t.dataset.t === "config") refreshExport();
+    });
+  });
+
+  function syncWallUI() {
+    var key = targetKey();
+    var p = S.wallpaper[key];
+    root.querySelectorAll("#ds-wtarget button").forEach(function (b) {
+      var dis = b.dataset.v === "second" && !S.screens.secondOn;
+      b.disabled = dis;
+      b.style.opacity = dis ? ".4" : "";
+      var on = b.dataset.v === wTarget || (b.dataset.v === "span" && wTarget === "span");
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    root.querySelectorAll(".ds-style-chip").forEach(function (b) {
+      var on = b.dataset.style === p.style;
+      b.classList.toggle("is-on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    $("ds-hue").value = p.hue;
+    $("ds-hue-v").textContent = p.hue + "°";
+    $("ds-dim").value = p.dim;
+    $("fs-dim-v").textContent = p.dim + "%";
+    $("ds-autoday").checked = !!S.autoDay;
+    syncSeg("ds-fx", p.fx || "none");
+    syncSeg("ds-rotate", String(S.rotate));
+    $("ds-dl").textContent = wTarget === "span" ? "下载跨屏 PNG" : wTarget === "second" ? "下载副屏 PNG" : "下载主屏 PNG";
+  }
+  function buildStyleChips() {
+    var box = $("ds-styles");
+    box.innerHTML = "";
+    WALL_STYLES.forEach(function (st) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "ds-style-chip cursor-interaction";
+      b.setAttribute("aria-pressed", "false");
+      b.dataset.style = st;
+      var cv = document.createElement("canvas");
+      cv.width = 148; cv.height = 92; cv.id = "ds-pv-" + st;
+      var sp = document.createElement("span");
+      sp.textContent = STYLE_NAMES[st];
+      b.appendChild(cv); b.appendChild(sp);
+      b.addEventListener("click", function () {
+        S.wallpaper[targetKey()].style = st;
+        S.wallpaper[targetKey()].seed = Math.floor(Math.random() * 9999) + 1;
+        syncWallUI(); renderWalls(); renderPreviews(); persist(true);
+      });
+      box.appendChild(b);
+    });
+  }
+  root.querySelectorAll("#ds-wtarget button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (b.disabled) return;
+      wTarget = b.dataset.v;
+      S.wallpaper.span.on = wTarget === "span" && S.screens.secondOn;
+      applyScreens();
+      syncWallUI(); renderWalls(); renderPreviews(); persist(true);
+    });
+  });
+  $("ds-hue").addEventListener("input", function () {
+    S.wallpaper[targetKey()].hue = +$("ds-hue").value;
+    $("ds-hue-v").textContent = S.wallpaper[targetKey()].hue + "°";
+    renderWalls(); renderPreviews(); persist();
+  });
+  $("ds-dim").addEventListener("input", function () {
+    S.wallpaper[targetKey()].dim = +$("ds-dim").value;
+    $("fs-dim-v").textContent = S.wallpaper[targetKey()].dim + "%";
+    renderWalls(); persist();
+  });
+  $("ds-rand").addEventListener("click", function () {
+    var p = S.wallpaper[targetKey()];
+    p.style = WALL_STYLES[Math.floor(Math.random() * WALL_STYLES.length)];
+    p.hue = Math.floor(Math.random() * 360);
+    p.seed = Math.floor(Math.random() * 9999) + 1;
+    syncWallUI(); renderWalls(); renderPreviews(); persist(true);
+    toast("抽中了「" + STYLE_NAMES[p.style] + "」，不喜欢再点一次");
+  });
+  $("ds-dl").addEventListener("click", function () {
+    try {
+      var key = targetKey();
+      var p = S.wallpaper[key];
+      var baseH = 1440;
+      var m = metrics();
+      var cw, chh;
+      if (key === "span") { chh = baseH; cw = Math.round(baseH * (m.w0 + m.w1) / m.H); }
+      else if (key === "second") { chh = baseH; cw = Math.round(baseH * m.w1 / m.H); }
+      else { chh = baseH; cw = Math.round(baseH * m.w0 / m.H); }
+      var out = document.createElement("canvas");
+      out.width = cw; out.height = chh;
+      var octx = out.getContext("2d");
+      if (p.blur) { octx.filter = "blur(" + (p.blur * 2) + "px)"; }
+      if (key === "span") drawWallpaper(octx, cw, chh, p);
+      else drawWallpaper(octx, cw, chh, p);
+      octx.filter = "none";
+      if (p.dim > 0) { octx.fillStyle = "rgba(5,8,16," + (p.dim / 100).toFixed(3) + ")"; octx.fillRect(0, 0, cw, chh); }
+      out.toBlob(function (blob) {
+        if (!blob) { toast("导出失败，请重试"); return; }
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "aura-wall-" + key + "-" + p.style + ".png";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+        toast("壁纸已开始下载（" + cw + "×" + chh + "）");
+      }, "image/png");
+    } catch (err) { toast("当前环境不允许下载，可在独立窗口打开后重试"); }
+  });
+
+  root.querySelectorAll("#ds-mode button").forEach(function (b) {
+    b.addEventListener("click", function () { S.theme.mode = b.dataset.v; applyTheme(); syncThemeUI(); persist(true); });
+  });
+  $("ds-glass").addEventListener("input", function () {
+    S.theme.glass = +$("ds-glass").value;
+    $("ds-glass-v").textContent = S.theme.glass + "px";
+    applyTheme(); persist();
+  });
+  $("ds-radius").addEventListener("input", function () {
+    S.theme.radius = +$("ds-radius").value;
+    $("ds-radius-v").textContent = S.theme.radius + "px";
+    applyTheme(); persist();
+  });
+  $("ds-widgetscale").addEventListener("input", function () {
+    S.theme.widgetScale = +$("ds-widgetscale").value;
+    $("ds-widgetscale-v").textContent = S.theme.widgetScale + "%";
+    applyTheme(); persist();
+  });
+  $("ds-widgetalpha").addEventListener("input", function () {
+    S.theme.widgetAlpha = +$("ds-widgetalpha").value;
+    $("ds-widgetalpha-v").textContent = S.theme.widgetAlpha + "%";
+    applyTheme(); persist();
+  });
+  $("ds-perf").addEventListener("change", function () {
+    S.theme.perf = $("ds-perf").checked;
+    applyTheme(); persist(true);
+  });
+  $("ds-factory").addEventListener("click", function () {
+    freshState(true);
+    applyAll();
+    persist(true);
+    toast("已恢复默认设置（配置档已保留）");
+  });
+
+  /* studio: theme presets */
+  var THEMES = [
+    { name: "午夜蓝调", mode: "dark", accent: "#7aa2ff", style: "aurora", hue: 232 },
+    { name: "赛博紫夜", mode: "dark", accent: "#a78bfa", style: "starfield", hue: 275 },
+    { name: "晨雾青柠", mode: "light", accent: "#2dd4bf", style: "mesh", hue: 165 },
+    { name: "暖阳橘", mode: "light", accent: "#fb923c", style: "dune", hue: 28 },
+    { name: "石墨极简", mode: "dark", accent: "#94a3b8", style: "mono", hue: 220 }
+  ];
+  function buildThemeButtons() {
+    var box = $("ds-themes");
+    box.innerHTML = "";
+    THEMES.forEach(function (t) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "cursor-interaction";
+      b.textContent = t.name;
+      b.addEventListener("click", function () { applyThemePreset(t); });
+      box.appendChild(b);
+    });
+  }
+  function applyThemePreset(t) {
+    S.theme.mode = t.mode;
+    S.theme.accent = t.accent;
+    ["main", "second", "span"].forEach(function (g) {
+      S.wallpaper[g].style = t.style;
+      S.wallpaper[g].hue = (t.hue + (g === "second" ? 26 : 0)) % 360;
+      S.wallpaper[g].seed = Math.floor(Math.random() * 9999) + 1;
+    });
+    applyTheme(); syncThemeUI(); syncWallUI(); renderWalls(); renderPreviews(); persist(true);
+    toast("已换上「" + t.name + "」\u2728");
+  }
+
+  /* studio: ambience — motion / auto day / rotate / focus */
+  function applyMotion() {
+    var f0 = S.wallpaper.span.on ? S.wallpaper.span.fx : S.wallpaper.main.fx;
+    var f1 = S.wallpaper.span.on ? S.wallpaper.span.fx : S.wallpaper.second.fx;
+    wall0.classList.toggle("ds-motion", f0 === "drift");
+    wall1.classList.toggle("ds-motion", f1 === "drift");
+  }
+  var fxControllers = new Map();
+  function updateFx(canvas, m, si, p) {
+    var key = [si, m.w0, m.H, m.w1, m.H1 || 0, p.style, p.hue, p.seed, p.dim, p.fx].join("|");
+    var cur = fxControllers.get(canvas);
+    if (cur && cur.key === key) return;
+    if (cur) { cancelAnimationFrame(cur.raf); fxControllers.delete(canvas); }
+    if (p.fx !== "spark") return;
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    var base = document.createElement("canvas");
+    base.width = canvas.width;
+    base.height = canvas.height;
+    base.getContext("2d").drawImage(canvas, 0, 0);
+    var rnd = mulberry32((p.seed || 1) * 31 + 7);
+    var w = canvas.clientWidth || 600, h = canvas.clientHeight || 400;
+    var parts = [];
+    for (var i = 0; i < 64; i++) parts.push({ x: rnd() * w, y: rnd() * h, r: 0.6 + rnd() * 1.5, sp: 0.4 + rnd() * 1.3, ph: rnd() * Math.PI * 2, tint: i % 5 === 0 });
+    var ctx = canvas.getContext("2d");
+    var ctrl = { key: key, base: base, parts: parts, ctx: ctx, t0: performance.now(), last: -999, canvas: canvas, raf: 0 };
+    var frame = function (now) {
+      if (fxControllers.get(canvas) !== ctrl) return;
+      if (now - ctrl.last > 66) {
+        ctrl.last = now;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(base, 0, 0);
+        var d2 = Math.min(window.devicePixelRatio || 1, 2);
+        ctx.setTransform(d2, 0, 0, d2, 0, 0);
+        var t = (now - ctrl.t0) / 1000;
+        for (var i = 0; i < parts.length; i++) {
+          var pt = parts[i];
+          ctx.globalAlpha = 0.12 + 0.66 * Math.abs(Math.sin(t * pt.sp + pt.ph));
+          ctx.fillStyle = pt.tint ? "hsl(" + p.hue + ",85%,82%)" : "#ffffff";
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctrl.raf = requestAnimationFrame(frame);
+    };
+    ctrl.raf = requestAnimationFrame(frame);
+    fxControllers.set(canvas, ctrl);
+  }
+  root.querySelectorAll("#ds-fx button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.wallpaper[targetKey()].fx = b.dataset.v;
+      applyMotion(); renderWalls(); persist(true);
+    });
+  });
+
+  function dayPhase() {
+    var h = new Date().getHours();
+    if (h >= 5 && h < 9) return { name: "晨", hue: 36, dim: 10 };
+    if (h >= 9 && h < 16) return { name: "昼", hue: 205, dim: 6 };
+    if (h >= 16 && h < 20) return { name: "暮", hue: 22, dim: 22 };
+    return { name: "夜", hue: 258, dim: 30 };
+  }
+  var lastPhaseName = null, dayT = 0;
+  function applyDayPhase(force) {
+    var p = dayPhase();
+    if (!force && p.name === lastPhaseName) return;
+    lastPhaseName = p.name;
+    S.wallpaper.main.hue = p.hue;
+    S.wallpaper.second.hue = (p.hue + 26) % 360;
+    S.wallpaper.span.hue = p.hue;
+    S.wallpaper.main.dim = p.dim;
+    S.wallpaper.second.dim = p.dim;
+    S.wallpaper.span.dim = p.dim;
+    syncWallUI(); renderWalls(); renderPreviews(); persist();
+    if (!force) toast("已切换到「" + p.name + "」氛围");
+  }
+  function setAutoDay(on) {
+    S.autoDay = on;
+    if (on) {
+      applyDayPhase(true);
+      if (!dayT) dayT = setInterval(function () { applyDayPhase(false); }, 60000);
+    } else if (dayT) { clearInterval(dayT); dayT = 0; }
+    syncWallUI(); persist(true);
+  }
+  $("ds-autoday").addEventListener("change", function () {
+    setAutoDay($("ds-autoday").checked);
+    if (S.autoDay) toast("昼夜氛围已开启 \u2713 当前「" + dayPhase().name + "」");
+  });
+
+  var rotT = 0;
+  function rotateWallpapers() {
+    ["main", "second", "span"].forEach(function (g) {
+      S.wallpaper[g].style = WALL_STYLES[Math.floor(Math.random() * WALL_STYLES.length)];
+      S.wallpaper[g].hue = Math.floor(Math.random() * 360);
+      S.wallpaper[g].seed = Math.floor(Math.random() * 9999) + 1;
+    });
+    syncWallUI(); renderWalls(); renderPreviews(); persist();
+  }
+  function setRotate(v) {
+    S.rotate = v;
+    if (rotT) { clearInterval(rotT); rotT = 0; }
+    if (v > 0) rotT = setInterval(rotateWallpapers, v * 1000);
+    syncSeg("ds-rotate", String(v));
+    persist(true);
+  }
+  root.querySelectorAll("#ds-rotate button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      setRotate(+b.dataset.v);
+      if (S.rotate) toast("壁纸将每 " + (S.rotate >= 60 ? (S.rotate / 60) + " 分钟" : S.rotate + " 秒") + "自动轮换");
+    });
+  });
+
+  var focusOn = false;
+  function toggleFocus() {
+    focusOn = !focusOn;
+    root.classList.toggle("ds-focus", focusOn);
+    toast(focusOn ? "专注模式：桌面已清空，再点一次恢复" : "已恢复桌面 \u2713");
+  }
+  root.querySelectorAll("[data-wtoggle]").forEach(function (t) {
+    t.addEventListener("change", function () { setWidgetOn(t.dataset.wtoggle, t.checked); });
+  });
+  $("ds-layout").addEventListener("click", function () {
+    autoBalanceLayout(); persist(true); toast("布局已重置");
+  });
+  var PRESETS = {
+    work: { main: ["clock", "calendar", "todo", "note"], second: ["monitor", "weather"] },
+    live: { main: ["todo", "note"], second: ["clock", "monitor", "weather"] },
+    focus: { main: ["clock", "calendar", "todo", "note"], second: [] },
+    balance: { main: ["clock", "calendar", "weather"], second: ["monitor", "todo", "note"] }
+  };
+  root.querySelectorAll("[data-preset]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var p = PRESETS[b.dataset.preset];
+      if (!p) return;
+      var rs = screenRects();
+      var secondOn = S.screens.secondOn;
+      Object.keys(S.widgets).forEach(function (k) {
+        var inMain = p.main && p.main.indexOf(k) >= 0;
+        var inSecond = secondOn && p.second && p.second.indexOf(k) >= 0;
+        if (inMain || inSecond) { S.widgets[k].on = true; delete S.widgets[k].userOff; }
+        else { S.widgets[k].on = false; S.widgets[k].userOff = true; }
+      });
+      applyVisibility();
+      ["main", "second"].forEach(function (side, si) {
+        if (!p[side] || !p[side].length) return;
+        var r = rs[Math.min(si, rs.length - 1)];
+        p[side].forEach(function (k, i) {
+          if (!S.widgets[k] || !S.widgets[k].on) return;
+          S.widgets[k].x = Math.round(r.x + r.w / 2 - ww() / 2 + (i % 2) * 16 - 8);
+          S.widgets[k].y = Math.round(r.y + 46 + (i % 4) * 26);
+        });
+      });
+      autoBalanceLayout();
+      persist(true);
+      toast("已应用「" + b.textContent + "」场景 ✓");
+    });
+  });
+
+  $("ds-s2on").addEventListener("change", function () {
+    S.screens.secondOn = $("ds-s2on").checked;
+    if (!S.screens.secondOn) {
+      if (S.dock.mode === "second") { S.dock.mode = "main"; syncDualUI(); }
+      if (wTarget === "second") { wTarget = "main"; syncWallUI(); renderPreviews(); }
+    } else if (S.wallpaper.span.on) { renderWalls(); }
+    applyScreens(); renderWalls(); clampWidgets(); applyDock(); persist(true);
+  });
+  function syncDualUI() {
+    $("ds-s2on").checked = S.screens.secondOn;
+    syncSeg("ds-r1", String(S.screens.r1));
+    syncSeg("ds-r2", String(S.screens.r2));
+    syncSeg("ds-dmode", S.dock.mode);
+    $("ds-dsize").value = S.dock.size;
+    $("ds-dsize-v").textContent = S.dock.size + "px";
+    $("ds-mag").checked = !!S.dock.magnify;
+    applyVw();
+  }
+  function applyVw() {
+    if (!vwrap) return;
+    vwrap.style.maxWidth = S.vw ? S.vw + "px" : "100%";
+    $("ds-vw-v").textContent = S.vw ? S.vw + "px" : "跟随窗口";
+    var sl = $("ds-vw");
+    if (sl && document.activeElement !== sl) sl.value = S.vw || 1240;
+  }
+  $("ds-vw").addEventListener("input", function () {
+    var v = +$("ds-vw").value;
+    S.vw = v >= 1240 ? 0 : v;
+    applyVw(); persist();
+  });
+  root.querySelectorAll("#ds-r1 button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.screens.r1 = parseFloat(b.dataset.v);
+      applyScreens(); renderWalls(); clampWidgets(); syncDualUI(); persist(true);
+    });
+  });
+  root.querySelectorAll("#ds-r2 button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.screens.r2 = parseFloat(b.dataset.v);
+      applyScreens(); renderWalls(); clampWidgets(); syncDualUI(); persist(true);
+    });
+  });
+  root.querySelectorAll("#ds-dmode button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.dock.mode = b.dataset.v;
+      applyDock(); syncDualUI(); persist(true);
+    });
+  });
+  $("ds-dsize").addEventListener("input", function () {
+    S.dock.size = +$("ds-dsize").value;
+    $("ds-dsize-v").textContent = S.dock.size + "px";
+    applyDock(); persist();
+  });
+  $("ds-mag").addEventListener("change", function () {
+    S.dock.magnify = $("ds-mag").checked;
+    persist(true);
+  });
+
+  function mergeConfig(obj) {
+    if (!obj || typeof obj !== "object") return;
+    if (obj.wallpaper) mergeWp(obj.wallpaper, S.wallpaper);
+    ["theme", "dock", "screens"].forEach(function (g) {
+      if (obj[g]) Object.assign(S[g], pick(obj[g], S[g]));
+    });
+    if (typeof obj.vw === "number") S.vw = clamp(obj.vw, 0, 2000);
+    if (obj.widgets) Object.keys(S.widgets).forEach(function (k) {
+      if (obj.widgets[k]) Object.assign(S.widgets[k], pick(obj.widgets[k], S.widgets[k]));
+    });
+    if (Array.isArray(obj.todo)) S.todo = obj.todo.slice(0, 20).map(function (t) {
+      return { text: String(t && t.text || "").slice(0, 80), done: !!(t && t.done) };
+    }).filter(function (t) { return t.text; });
+    if (typeof obj.note === "string") S.note = obj.note.slice(0, 400);
+    if (typeof obj.autoDay === "boolean") S.autoDay = obj.autoDay;
+    if (obj.rotate === 0 || obj.rotate === 60 || obj.rotate === 300) S.rotate = obj.rotate;
+    if (Array.isArray(obj.profiles)) S.profiles = obj.profiles.slice(0, 4).map(function (p) {
+      return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
+    }).filter(function (p) { return p.snap; });
+    if (obj.icons && typeof obj.icons === "object") {
+      ["pc", "docs", "photos", "trash"].forEach(function (k) {
+        var v = obj.icons[k];
+        if (v && typeof v === "object") S.icons[k] = { label: String(v.label || "").slice(0, 12), emoji: typeof v.emoji === "string" ? v.emoji.slice(0, 4) : "", off: !!v.off };
+      });
+    }
+    ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
+  }
+
+  function refreshExport() {
+    var ta = $("ds-exp");
+    if (!ta) return;
+    try {
+      ta.value = JSON.stringify({
+        version: 3,
+        wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens,
+        widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400),
+        autoDay: S.autoDay, rotate: S.rotate, icons: S.icons
+      });
+    } catch (e) {}
+  }
+  $("ds-refresh").addEventListener("click", refreshExport);
+  $("ds-copy").addEventListener("click", function () {
+    refreshExport();
+    var ta = $("ds-exp");
+    ta.focus(); ta.select();
+    var ok = false;
+    try { ok = document.execCommand && document.execCommand("copy"); } catch (e) { ok = false; }
+    if (!ok && navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(function () { toast("配置已复制"); }, function () { toast("复制失败，请手动选择复制"); });
+      return;
+    }
+    toast(ok ? "配置已复制" : "复制失败，请手动选择复制");
+  });
+  $("ds-apply").addEventListener("click", function () {
+    try {
+      mergeConfig(JSON.parse($("ds-imp").value));
+      applyAll();
+      persist(true);
+      toast("配置已应用 ✓");
+    } catch (e) { toast("JSON 解析失败，请检查格式"); }
+  });
+
+  /* ---------------- profiles ---------------- */
+  function snapshotConfig() {
+    return JSON.parse(JSON.stringify({ wallpaper: S.wallpaper, theme: S.theme, dock: S.dock, screens: S.screens, widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), autoDay: S.autoDay, rotate: S.rotate }));
+  }
+  function renderProfiles() {
+    var box = $("ds-prof-list");
+    box.innerHTML = "";
+    if (!S.profiles.length) {
+      var hint = document.createElement("p");
+      hint.className = "ds-hint";
+      hint.style.marginTop = "0";
+      hint.textContent = "还没有配置档。把桌面调好后起个名字存下来。";
+      box.appendChild(hint);
+      return;
+    }
+    S.profiles.forEach(function (p, i) {
+      var row = document.createElement("div");
+      row.className = "ds-wrow";
+      var name = document.createElement("span");
+      name.textContent = p.name;
+      var bapp = document.createElement("button");
+      bapp.type = "button";
+      bapp.className = "ds-btn cursor-interaction";
+      bapp.style.cssText = "flex:none;height:24px;padding:0 12px;font-size:11.5px";
+      bapp.textContent = "应用";
+      bapp.addEventListener("click", function () {
+        mergeConfig(JSON.parse(JSON.stringify(p.snap)));
+        applyAll();
+        persist(true);
+        toast("已应用「" + p.name + "」✓");
+      });
+      var bdel = document.createElement("button");
+      bdel.type = "button";
+      bdel.className = "ds-todo-del cursor-interaction";
+      bdel.textContent = "×";
+      bdel.setAttribute("aria-label", "删除配置档 " + p.name);
+      bdel.addEventListener("click", function () {
+        S.profiles.splice(i, 1);
+        renderProfiles();
+        persist(true);
+      });
+      row.appendChild(name);
+      row.appendChild(bapp);
+      row.appendChild(bdel);
+      box.appendChild(row);
+    });
+  }
+  $("ds-prof-save").addEventListener("click", function () {
+    var name = $("ds-prof-name").value.trim().slice(0, 16);
+    if (!name) { $("ds-prof-name").focus(); return; }
+    if (S.profiles.length >= 4) { toast("最多保存 4 套配置档，先删一套吧"); return; }
+    S.profiles.push({ name: name, snap: snapshotConfig() });
+    $("ds-prof-name").value = "";
+    renderProfiles();
+    persist(true);
+    toast("配置档「" + name + "」已保存 ✓");
+  });
+
+  /* ---------------- lock screen ---------------- */
+  var lockEl = $("ds-lock");
+  function toggleLock(force) {
+    var show = typeof force === "boolean" ? force : lockEl.hidden;
+    lockEl.hidden = !show;
+    if (show) updateLockTime();
+  }
+  function updateLockTime() {
+    var d = new Date();
+    $("ds-lock-time").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    $("ds-lock-date").textContent = (d.getMonth() + 1) + "月" + d.getDate() + "日 " + WEEK[d.getDay()];
+  }
+  lockEl.addEventListener("click", function () { toggleLock(false); });
+
+  /* ---------------- desktop icon editor ---------------- */
+  var ICON_DEFS = { pc: { label: "此电脑", icon: "monitor" }, docs: { label: "我的文档", icon: "folder" }, photos: { label: "照片", icon: "image" }, trash: { label: "回收站", icon: "trash-2" } };
+  var ICON_GLYPHS = ["🖥️", "📁", "🖼️", "🎵", "⭐", "📦", "🌐", "🗑️"];
+  function renderIcons() {
+    Object.keys(ICON_DEFS).forEach(function (k) {
+      var el = root.querySelector('[data-ic="' + k + '"]');
+      if (!el) return;
+      var ov = S.icons[k] || {};
+      el.style.display = ov.off ? "none" : "";
+      var labelEl = el.querySelector(".ds-dlabel");
+      if (labelEl) labelEl.textContent = ov.label || ICON_DEFS[k].label;
+      var tile = el.querySelector(".ds-dtile");
+      if (!tile) return;
+      if (ov.emoji) {
+        var sp = tile.querySelector(".ds-emoji");
+        if (!sp) {
+          tile.innerHTML = "";
+          sp = document.createElement("span");
+          sp.className = "ds-emoji";
+          sp.setAttribute("aria-hidden", "true");
+          tile.appendChild(sp);
+        }
+        sp.textContent = ov.emoji;
+      } else if (!tile.querySelector("svg") && !tile.querySelector("i[data-lucide]")) {
+        tile.innerHTML = "";
+        var ic = document.createElement("i");
+        ic.setAttribute("data-lucide", ICON_DEFS[k].icon);
+        ic.setAttribute("aria-hidden", "true");
+        tile.appendChild(ic);
+        if (window.lucide) { try { lucide.createIcons({ attrs: { width: 16, height: 16 } }); } catch (e) {} }
+      }
+    });
+  }
+  var icedit = $("ds-icedit"), iceditKey = null;
+  function openIcEdit(k, iconEl) {
+    iceditKey = k;
+    var ov = S.icons[k] || {};
+    $("ds-icedit-name").value = ov.label || ICON_DEFS[k].label;
+    var gs = $("ds-ic-glyphs");
+    gs.innerHTML = "";
+    ICON_GLYPHS.forEach(function (g) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "cursor-interaction" + (ov.emoji === g ? " is-on" : "");
+      b.textContent = g;
+      b.setAttribute("aria-label", "图标 " + g);
+      b.addEventListener("click", function () {
+        S.icons[k] = Object.assign({}, S.icons[k], { emoji: ov.emoji === g ? "" : g });
+        renderIcons();
+        openIcEdit(k, iconEl);
+        persist(true);
+      });
+      gs.appendChild(b);
+    });
+    $("ds-icedit-hide").textContent = ov.off ? "恢复显示" : "隐藏图标";
+    var sr = stage.getBoundingClientRect();
+    var ir = iconEl.getBoundingClientRect();
+    icedit.style.left = clamp(ir.right - sr.left + 8, 8, stage.clientWidth - 190) + "px";
+    icedit.style.top = clamp(ir.top - sr.top, 40, stage.clientHeight - 200) + "px";
+    icedit.hidden = false;
+  }
+  $("ds-icedit-name").addEventListener("input", function () {
+    if (!iceditKey) return;
+    S.icons[iceditKey] = Object.assign({}, S.icons[iceditKey], { label: $("ds-icedit-name").value.slice(0, 12) });
+    renderIcons();
+    persist();
+  });
+  $("ds-icedit-hide").addEventListener("click", function () {
+    if (!iceditKey) return;
+    S.icons[iceditKey] = Object.assign({}, S.icons[iceditKey], { off: !(S.icons[iceditKey] || {}).off });
+    renderIcons();
+    icedit.hidden = true;
+    persist(true);
+  });
+  $("ds-icedit-reset").addEventListener("click", function () {
+    if (!iceditKey) return;
+    delete S.icons[iceditKey];
+    renderIcons();
+    var el = root.querySelector('[data-ic="' + iceditKey + '"]');
+    if (el) openIcEdit(iceditKey, el);
+    persist(true);
+  });
+
+  /* ---------------- keyboard shortcuts ---------------- */
+  window.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target;
+    if (t && ((t.tagName === "INPUT" || t.tagName === "TEXTAREA") || t.isContentEditable)) return;
+    var k = (e.key || "").toLowerCase();
+    if (k === "f") toggleFocus();
+    else if (k === "l") toggleLock();
+    else if (k === "r") { rotateWallpapers(); toast("已随机更换壁纸 🎲"); }
+    else if (k === "escape" && !lockEl.hidden) toggleLock(false);
+  });
+
+  /* ---------------- resize ---------------- */
+  var lastW = 0, settleT = 0;
+  function onStageResize() {
+    if (settleT) clearTimeout(settleT);
+    settleT = setTimeout(function () {
+      settleT = 0;
+      var w = stage.clientWidth;
+      if (Math.abs(w - lastW) < 8 && !pendingRebalance) return;
+      lastW = w;
+      applyScreens();
+      renderWalls();
+      if (pendingRebalance) { pendingRebalance = false; autoBalanceLayout(); }
+      else clampWidgets();
+      applyDock();
+    }, 140);
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(onStageResize).observe(stage);
+  } else {
+    window.addEventListener("resize", onStageResize);
+  }
+
+  /* ---------------- host state sync ---------------- */
+  window.addEventListener("zcode:set_globals", function (e) {
+    var ws = e && e.detail && e.detail.globals && e.detail.globals.widgetState;
+    if (!ws) return;
+    freshState(false);
+    try { loadState(); } catch (err) {}
+    applyAll();
+  });
+
+  /* ---------------- boot ---------------- */
+  var booting = true;
+  function applyAll() {
+    applyTheme();
+    syncWallUI();
+    syncThemeUI();
+    syncDualUI();
+    applyVisibility();
+    renderCal();
+    renderTodo();
+    $("ds-note").value = S.note;
+    applyScreens();
+    var needLayout = Object.keys(S.widgets).some(function (k) { return S.widgets[k].on && S.widgets[k].x == null; });
+    if (needLayout) autoBalanceLayout();
+    else clampWidgets();
+    pendingRebalance = false;
+    renderIcons();
+    renderProfiles();
+    applyDock();
+    applyMotion();
+    renderWalls();
+    renderPreviews();
+    tickClock();
+    tickMonitor();
+    refreshExport();
+    if (S.autoDay) { applyDayPhase(true); if (!dayT) dayT = setInterval(function () { applyDayPhase(false); }, 60000); }
+    if (S.rotate && !rotT) { rotT = setInterval(rotateWallpapers, S.rotate * 1000); syncSeg("ds-rotate", String(S.rotate)); }
+    booting = false;
+  }
+
+  loadState();
+  try {
+    var qw = parseInt(new URLSearchParams(location.search).get("w"), 10);
+    if (qw >= 320 && qw <= 2000) S.vw = qw;
+  } catch (e) {}
+  buildStyleChips();
+  buildSwatches();
+  buildThemeButtons();
+  buildDock(docks[0]);
+  buildDock(docks[1]);
+  applyAll();
+  if (window.lucide) { try { lucide.createIcons({ attrs: { width: 16, height: 16 } }); } catch (e) {} }
+  setInterval(tickClock, 5000);
+  setInterval(tickMonitor, 1600);
+  setTimeout(function () { toast("提示：点击 Dock 上的 ⚙ 打开双屏工坊"); }, 900);
+})();
+</script>
+</div>
+
+<script>
+(function(){
+  function swap(){
+    if (window.lucide && window.lucide.createIcons) { window.lucide.createIcons({attrs:{width:16,height:16}}); return; }
+    var MAP={compass:"🧭",mail:"✉️",music:"🎵",image:"🖼️","calendar-days":"📅",terminal:"⌨️",settings:"⚙️","trash-2":"🗑️",wifi:"📶","volume-2":"🔊","battery-medium":"🔋","cloud-sun":"⛅",monitor:"🖥️",folder:"📁",clock:"🕐",activity:"📊","list-checks":"✅","sticky-note":"📝",scan:"✨","eye-off":"🙈","sun-moon":"🌓",waves:"🌊",lock:"🔒"};
+    document.querySelectorAll("i[data-lucide]").forEach(function(el){
+      var s=document.createElement("span");
+      s.className="ds-emoji";
+      s.setAttribute("aria-hidden","true");
+      s.textContent=MAP[el.getAttribute("data-lucide")]||"◆";
+      el.replaceWith(s);
+    });
+  }
+  if (document.readyState === "complete") setTimeout(swap, 200);
+  else window.addEventListener("load", function(){ setTimeout(swap, 200); });
+})();
+</script>
+</body>
+</html>
