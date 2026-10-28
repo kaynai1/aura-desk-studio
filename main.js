@@ -204,12 +204,12 @@ function onDisplayChanged() {
     notifyDisplaysChanged();
   }, 600);
 }
-["display-added", "display-removed", "display-metrics-changed"].forEach(function (ev) {
-  screen.on(ev, onDisplayChanged);
-});
 
 /* ---------- lifecycle ---------- */
 app.whenReady().then(function () {
+  ["display-added", "display-removed", "display-metrics-changed"].forEach(function (ev) {
+    screen.on(ev, onDisplayChanged);
+  });
   createWindow();
   createOverlays();
   createTray();
