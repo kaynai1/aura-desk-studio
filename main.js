@@ -1,8 +1,53 @@
-const { app, BrowserWindow, Menu, ipcMain, screen } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, screen, Tray, nativeImage } = require("electron");
 const path = require("path");
+const fs = require("fs");
+const { execFile } = require("child_process");
 
 let castWin = null;
+let overlayWin = null;
+let tray = null;
+let quitting = false;
 
+/* ---------- 16x16 tray icon drawn from raw BGRA pixels ---------- */
+function makeTrayIcon() {
+  const size = 16;
+  const buf = Buffer.alloc(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const t = (x + y) / (size * 2 - 2);
+      buf[i] = Math.round(255 * (0.35 + 0.25 * t));     // B
+      buf[i + 1] = Math.round(200 * (0.4 + 0.3 * t));   // G
+      buf[i + 2] = Math.round(140 + 100 * t);           // R
+      buf[i + 3] = 255;                                  // A
+    }
+  }
+  return nativeImage.createFromBitmap(buf, { width: size, height: size });
+}
+
+function createTray() {
+  try {
+    tray = new Tray(makeTrayIcon());
+    tray.setToolTip("AURA 双屏工坊");
+    const menu = Menu.buildFromTemplate([
+      { label: "显示控制台", click: function () { showStudio(); } },
+      { label: "显示桌面小组件", click: function () { createOverlay(); } },
+      { label: "隐藏桌面小组件", click: function () { hideOverlays(); } },
+      { type: "separator" },
+      { label: "退出", click: function () { quitting = true; app.quit(); } }
+    ]);
+    tray.setContextMenu(menu);
+    tray.on("click", function () { showStudio(); });
+  } catch (e) { /* tray unavailable */ }
+}
+
+function showStudio() {
+  const wins = BrowserWindow.getAllWindows().filter(function (w) { return !w.isDestroyed() && w.webContents.getURL().indexOf("index.html") >= 0; });
+  if (wins.length) { wins[0].show(); wins[0].focus(); return; }
+  createWindow();
+}
+
+/* ---------- main studio window ---------- */
 function createWindow() {
   const win = new BrowserWindow({
     width: 1440,
@@ -20,8 +65,48 @@ function createWindow() {
   });
   Menu.setApplicationMenu(null);
   win.loadFile(path.join(__dirname, "index.html"));
+  win.on("close", function (e) {
+    if (!quitting && tray) {
+      e.preventDefault();
+      win.hide();
+    }
+  });
 }
 
+/* ---------- transparent desktop widgets overlay ---------- */
+function createOverlay() {
+  if (overlayWin && !overlayWin.isDestroyed()) { overlayWin.show(); return; }
+  const primary = screen.getPrimaryDisplay();
+  overlayWin = new BrowserWindow({
+    x: primary.bounds.x,
+    y: primary.bounds.y,
+    width: primary.bounds.width,
+    height: primary.bounds.height,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    skipTaskbar: true,
+    hasShadow: false,
+    alwaysOnTop: true,
+    zIndex: 5,
+    backgroundColor: "#00000000",
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, "preload.js")
+    }
+  });
+  overlayWin.setIgnoreMouseEvents(true, { forward: true });
+  overlayWin.loadFile(path.join(__dirname, "widgets.html"));
+  overlayWin.on("closed", function () { overlayWin = null; });
+}
+
+function hideOverlays() {
+  if (overlayWin && !overlayWin.isDestroyed()) overlayWin.hide();
+}
+
+/* ---------- second-screen dashboard ---------- */
 function createDashboard(second) {
   castWin = new BrowserWindow({
     x: second.bounds.x,
@@ -41,6 +126,24 @@ function createDashboard(second) {
   castWin.on("closed", function () { castWin = null; });
 }
 
+/* ---------- real desktop wallpaper ---------- */
+function applyRealWallpaper(dataUrl, callback) {
+  const b64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+  const file = path.join(app.getPath("userData"), "aura-wallpaper.png");
+  fs.writeFileSync(file, Buffer.from(b64, "base64"));
+  const script = [
+    "Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public class WP { [DllImport(\"user32.dll\", CharSet=CharSet.Auto)] public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni); }'",
+    "[WP]::SystemParametersInfo(20, 0, '" + file.replace(/'/g, "''") + "', 3)",
+    "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name WallpaperStyle -Value 22",
+    "Set-ItemProperty -Path 'HKCU:\\Control Panel\\Desktop' -Name TileWallpaper -Value 0"
+  ].join("; ");
+  const encoded = Buffer.from(script, "utf16le").toString("base64");
+  execFile("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-EncodedCommand", encoded], function (err) {
+    callback(err);
+  });
+}
+
+/* ---------- ipc ---------- */
 ipcMain.handle("aura:cast-second", function () {
   const displays = screen.getAllDisplays();
   const primary = screen.getPrimaryDisplay();
@@ -60,13 +163,42 @@ ipcMain.handle("aura:set-login-item", function (e, v) {
   return app.getLoginItemSettings();
 });
 
-app.whenReady().then(function () {
-  createWindow();
-  app.on("activate", function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+ipcMain.handle("aura:get-displays", function () {
+  const primary = screen.getPrimaryDisplay();
+  return screen.getAllDisplays().map(function (d) {
+    return { bounds: d.bounds, scaleFactor: d.scaleFactor, primary: d.id === primary.id };
   });
 });
 
+ipcMain.handle("aura:apply-wallpaper", function (e, dataUrl) {
+  return new Promise(function (resolve) {
+    applyRealWallpaper(dataUrl, function (err) {
+      resolve({ ok: !err, msg: err ? err.message : "" });
+    });
+  });
+});
+
+ipcMain.handle("aura:set-ignore-mouse", function (e, flag, opts) {
+  const win = BrowserWindow.fromWebContents(e.sender);
+  if (win) win.setIgnoreMouseEvents(!!flag, opts || { forward: true });
+  return true;
+});
+
+ipcMain.handle("aura:hide-overlays", function () { hideOverlays(); return true; });
+ipcMain.handle("aura:show-overlays", function () { createOverlay(); return true; });
+
+/* ---------- lifecycle ---------- */
+app.whenReady().then(function () {
+  createWindow();
+  createOverlay();
+  createTray();
+  app.on("activate", function () {
+    if (BrowserWindow.getAllWindows().filter(function (w) { return w.isVisible(); }).length === 0) showStudio();
+  });
+});
+
+app.on("before-quit", function () { quitting = true; });
+
 app.on("window-all-closed", function () {
-  app.quit();
+  if (!tray) app.quit();
 });

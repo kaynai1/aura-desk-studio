@@ -640,6 +640,9 @@
         <div class="ds-btnrow">
           <button class="ds-btn cursor-interaction" id="ds-factory" type="button">恢复默认设置（保留配置档）</button>
         </div>
+        <div class="ds-flabel">系统桌面（仅桌面版）</div>
+        <div class="ds-wrow" id="ds-autoapply-row" hidden><i data-lucide="monitor-check" aria-hidden="true"></i><span>自动应用到真实桌面壁纸</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-autoapply" aria-label="自动应用壁纸"><span></span></label></div>
+        <p class="ds-hint" id="ds-apply-status" hidden></p>
         <div class="ds-flabel">内存</div>
         <div class="ds-wrow" style="padding-top:0"><i data-lucide="memory-stick" aria-hidden="true"></i><span>内存优化（壁纸 1:1 渲染，后台减半）</span><label class="ds-switch cursor-interaction"><input type="checkbox" id="ds-memsave" aria-label="内存优化"><span></span></label></div>
         <p class="ds-hint" id="ds-mem-est">壁纸画布内存估算中…</p>
@@ -744,6 +747,7 @@
     S.wallFavs = [];
     S.pet = false;
     S.memSave = true;
+    S.autoApply = true;
     S.profiles = keep || [];
     S.icons = {};
     Object.keys(DEFAULTS.widgets).forEach(function (k) { S.widgets[k] = Object.assign({}, DEFAULTS.widgets[k]); });
@@ -801,6 +805,7 @@
       }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
       if (typeof src.pet === "boolean") S.pet = src.pet;
       if (typeof src.memSave === "boolean") S.memSave = src.memSave;
+      if (typeof src.autoApply === "boolean") S.autoApply = src.autoApply;
       if (Array.isArray(src.profiles)) S.profiles = src.profiles.slice(0, 4).map(function (p) {
         return { name: String(p && p.name || "").slice(0, 16), snap: p && typeof p.snap === "object" && p.snap ? p.snap : null };
       }).filter(function (p) { return p.snap; });
@@ -833,7 +838,7 @@
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400), vw: S.vw,
         autoDay: S.autoDay, rotate: S.rotate, profiles: S.profiles, icons: S.icons, noteColor: S.noteColor,
         countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
-        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave
+        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave, autoApply: S.autoApply
       };
       try {
         if (window.zcode && window.zcode.setWidgetState) {
@@ -1067,6 +1072,7 @@
     canvas.style.filter = "blur(" + (params.dim && params.blur ? params.blur : 0) + "px) brightness(" + (1 - (params.dim || 0) / 100).toFixed(3) + ")";
     canvas.setAttribute("aria-label", (si === 0 ? "主屏" : "副屏") + "壁纸：" + (span ? "跨屏全景·" : "") + (STYLE_NAMES[params.style] || params.style) + "风格");
     updateFx(canvas, m, si, params);
+    scheduleRealApply();
   }
   function wallMemMB() {
     var total = 0;
@@ -2495,6 +2501,7 @@
     }).map(function (f) { return { style: f.style, hue: +f.hue || 0, seed: +f.seed || 1, dim: +f.dim || 0 }; });
     if (typeof obj.pet === "boolean") S.pet = obj.pet;
     if (typeof obj.memSave === "boolean") S.memSave = obj.memSave;
+    if (typeof obj.autoApply === "boolean") S.autoApply = obj.autoApply;
     ["main", "second", "span"].forEach(function (g) { if (!STYLE_NAMES[S.wallpaper[g].style]) S.wallpaper[g].style = "aurora"; });
   }
 
@@ -2508,7 +2515,7 @@
         widgets: S.widgets, todo: S.todo.slice(0, 20), note: S.note.slice(0, 400),
         autoDay: S.autoDay, rotate: S.rotate, icons: S.icons, noteColor: S.noteColor,
         countdown: S.countdown, weatherCity: S.weatherCity, weatherLive: S.weatherLive, idleLock: S.idleLock,
-        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave
+        wallFavs: S.wallFavs, pet: S.pet, memSave: S.memSave, autoApply: S.autoApply
       });
     } catch (e) {}
   }
@@ -2688,6 +2695,83 @@
     var el = root.querySelector('[data-ic="' + iceditKey + '"]');
     if (el) openIcEdit(iceditKey, el);
     persist(true);
+  });
+
+  /* ---------------- real desktop wallpaper (desktop app) ---------------- */
+  var isDesktopApp = !!(window.aura && window.aura.isDesktop);
+  if (isDesktopApp) {
+    $("ds-autoapply-row").hidden = false;
+    $("ds-apply-status").hidden = false;
+    $("ds-autoapply").checked = S.autoApply !== false;
+    window.aura.getWallpaperApplied && null;
+  }
+  var realApplyT = 0, applying = false;
+  function scheduleRealApply() {
+    if (!isDesktopApp || S.autoApply === false) return;
+    clearTimeout(realApplyT);
+    realApplyT = setTimeout(applyRealWallpaper, 1200);
+  }
+  async function applyRealWallpaper() {
+    if (!isDesktopApp || applying || S.autoApply === false) return;
+    if (!$("ds-wall0")) return;
+    applying = true;
+    var st = $("ds-apply-status");
+    st.textContent = "正在应用到系统桌面…";
+    try {
+      var disps = await window.aura.getDisplays();
+      var sorted = disps.slice().sort(function (a, b) { return a.bounds.x - b.bounds.x || a.bounds.y - b.bounds.y; });
+      var minX = Math.min.apply(null, sorted.map(function (d) { return d.bounds.x; }));
+      var minY = Math.min.apply(null, sorted.map(function (d) { return d.bounds.y; }));
+      var regions = sorted.map(function (d) {
+        return {
+          px: Math.round((d.bounds.x - minX) * d.scaleFactor),
+          py: Math.round((d.bounds.y - minY) * d.scaleFactor),
+          pw: Math.round(d.bounds.width * d.scaleFactor),
+          ph: Math.round(d.bounds.height * d.scaleFactor),
+          primary: !!d.primary
+        };
+      });
+      var W = Math.max.apply(null, regions.map(function (r) { return r.px + r.pw; }));
+      var H = Math.max.apply(null, regions.map(function (r) { return r.py + r.ph; }));
+      var cv = document.createElement("canvas");
+      cv.width = W; cv.height = H;
+      var ctx = cv.getContext("2d");
+      if (S.wallpaper.span.on && sorted.length > 1) {
+        drawWallpaper(ctx, W, H, S.wallpaper.span);
+      } else {
+        regions.forEach(function (r) {
+          ctx.save();
+          ctx.translate(r.px, r.py);
+          drawWallpaper(ctx, r.pw, r.ph, r.primary ? S.wallpaper.main : S.wallpaper.second);
+          ctx.restore();
+        });
+      }
+      var url = cv.toDataURL("image/png");
+      var r2 = await window.aura.applyWallpaper(url);
+      st.textContent = r2 && r2.ok ? "已应用到系统桌面 ✓ " + new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }) : "应用失败：" + ((r2 && r2.msg) || "未知原因");
+    } catch (e) {
+      st.textContent = "应用失败：" + e.message;
+    } finally {
+      applying = false;
+    }
+  }
+  $("ds-autoapply").addEventListener("change", function () {
+    S.autoApply = $("ds-autoapply").checked;
+    persist(true);
+    if (S.autoApply) applyRealWallpaper();
+    else $("ds-apply-status").textContent = "自动应用已关闭";
+  });
+  window.addEventListener("storage", function (e) {
+    if (e.key !== "aura-desk-cfg" || !e.newValue) return;
+    try {
+      var priv = JSON.parse(e.newValue).privateContent;
+      if (!priv) return;
+      if (typeof priv.note === "string" && priv.note !== S.note) { S.note = priv.note; $("ds-note").value = S.note; }
+      if (Array.isArray(priv.todo)) {
+        S.todo = priv.todo.slice(0, 20);
+        renderTodo();
+      }
+    } catch (err) {}
   });
 
   /* ---------------- keyboard shortcuts ---------------- */

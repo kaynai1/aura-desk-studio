@@ -20,14 +20,20 @@
       "main.js",
       "preload.js",
       "index.html",
+      "widgets.html",
       "dashboard.html",
       "lucide.min.js",
       "package.json"
     ],
     "win": {
       "target": [
+        "nsis",
         "portable"
       ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "AURA-DeskStudio-Setup.exe"
     },
     "portable": {
       "artifactName": "AURA-DeskStudio-Windows.exe"

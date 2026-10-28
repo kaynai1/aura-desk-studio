@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; background: transparent; overflow: hidden; user-select: none; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #eef1f8; font-size: 13px;
+  }
+  .ov-card {
+    position: absolute;
+    width: 232px;
+    padding: 13px 15px 14px;
+    border-radius: 16px;
+    background: rgba(21, 23, 33, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(18px) saturate(1.55);
+    -webkit-backdrop-filter: blur(18px) saturate(1.55);
+    pointer-events: auto;
+  }
+  .ov-title { font-size: 11.5px; letter-spacing: .08em; color: rgba(238,241,248,.6); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; cursor: move; }
+  .ov-title .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--acc, #7aa2ff); flex: none; }
+  .ov-title span { flex: 1; }
+  .clock-time { font-size: 38px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .clock-date { margin-top: 4px; color: rgba(238,241,248,.65); font-size: 12.5px; }
+  .todo-add { display: flex; gap: 6px; margin-bottom: 8px; }
+  .todo-add input { flex: 1; min-width: 0; height: 28px; border-radius: 9px; border: 1px solid rgba(255,255,255,.14); background: rgba(238,241,248,.07); color: #eef1f8; padding: 0 9px; font: inherit; font-size: 12.5px; }
+  .todo-add button { height: 28px; padding: 0 11px; border-radius: 9px; background: rgba(238,241,248,.1); border: 0; color: #eef1f8; font: inherit; font-size: 12px; cursor: pointer; }
+  .todo-list { max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .todo-item { display: flex; align-items: center; gap: 8px; padding: 5px 7px; border-radius: 9px; font-size: 12.5px; cursor: pointer; }
+  .todo-item:hover { background: rgba(238,241,248,.08); }
+  .tick { flex: none; width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(238,241,248,.5); position: relative; }
+  .item-done .tick { background: var(--acc, #7aa2ff); border-color: var(--acc, #7aa2ff); }
+  .item-done .tick::after { content: ""; position: absolute; left: 4px; top: 1px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+  .item-done .txt { opacity: .5; text-decoration: line-through; }
+  .todo-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-area { width: 100%; height: 96px; resize: none; border: 0; background: transparent; color: #eef1f8; font: inherit; font-size: 12.5px; line-height: 1.55; padding: 0; outline: none; }
+  .note-area::placeholder { color: rgba(238,241,248,.4); }
+  .cd-num { font-size: 38px; font-weight: 500; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .cd-num small { font-size: 14px; font-weight: 400; margin-left: 4px; }
+  .cd-label { color: rgba(238,241,248,.65); font-size: 12px; margin-top: 3px; }
+  .cd-edit { display: flex; gap: 6px; margin-top: 10px; }
+  .cd-edit input { height: 24px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(238,241,248,.07); color: #eef1f8; padding: 0 8px; font: inherit; font-size: 11.5px; }
+  .cd-edit .t { flex: 2; min-width: 0; } .cd-edit .d { flex: 3; min-width: 0; }
+  .quote-text { font-size: 14px; line-height: 1.7; }
+  .quote-author { margin-top: 6px; font-size: 11.5px; color: rgba(238,241,248,.55); text-align: right; }
+  .quote-refresh { border: 0; background: none; color: rgba(238,241,248,.55); cursor: pointer; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="ov-card" id="c-clock" style="left:40px;top:60px">
+    <div class="ov-title"><span class="dot"></span><span>时钟</span></div>
+    <div class="clock-time" id="t">--:--</div>
+    <div class="clock-date" id="d">—</div>
+  </div>
+  <div class="ov-card" id="c-todo" style="left:40px;top:250px">
+    <div class="ov-title"><span class="dot"></span><span>待办</span></div>
+    <div class="todo-add"><input id="todoIn" placeholder="添加待办…" maxlength="80"><button id="todoAdd">添加</button></div>
+    <div class="todo-list" id="todoList"></div>
+  </div>
+  <div class="ov-card" id="c-note" style="left:40px;top:520px">
+    <div class="ov-title"><span class="dot"></span><span>便签</span></div>
+    <textarea class="note-area" id="noteArea" placeholder="写在真实桌面上…" maxlength="400"></textarea>
+  </div>
+  <div class="ov-card" id="c-countdown" style="left:320px;top:60px">
+    <div class="ov-title"><span class="dot"></span><span>倒计时</span></div>
+    <div class="cd-num"><span id="cdNum">--</span><small id="cdUnit">天</small></div>
+    <div class="cd-label" id="cdLabel">—</div>
+    <div class="cd-edit"><input class="t" id="cdT" maxlength="10" placeholder="事项"><input class="d" id="cdD" type="date"></div>
+  </div>
+  <div class="ov-card" id="c-quotes" style="left:320px;top:280px">
+    <div class="ov-title"><span class="dot"></span><span>每日一言</span><button class="quote-refresh" id="qNext">换一句 ↻</button></div>
+    <div class="quote-text" id="qText">—</div>
+    <div class="quote-author" id="qAuthor">—</div>
+  </div>
+<script>
+  var WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  var QUOTES = [
+    { t: "千里之行，始于足下。", a: "老子" },
+    { t: "长风破浪会有时，直挂云帆济沧海。", a: "李白" },
+    { t: "会当凌绝顶，一览众山小。", a: "杜甫" },
+    { t: "问渠那得清如许？为有源头活水来。", a: "朱熹" },
+    { t: "纸上得来终觉浅，绝知此事要躬行。", a: "陆游" },
+    { t: "天行健，君子以自强不息。", a: "《周易》" },
+    { t: "非淡泊无以明志，非宁静无以致远。", a: "诸葛亮" },
+    { t: "种一棵树最好的时间是十年前，其次是现在。", a: "谚语" },
+    { t: "博观而约取，厚积而薄发。", a: "苏轼" },
+    { t: "海纳百川，有容乃大。", a: "林则徐" }
+  ];
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function readCfg() {
+    try { return JSON.parse(localStorage.getItem("aura-desk-cfg") || "null"); } catch (e) { return null; }
+  }
+  function priv() {
+    var c = readCfg();
+    return c && c.privateContent ? c.privateContent : {};
+  }
+  /* ---- clock ---- */
+  function tick() {
+    var d = new Date();
+    document.getElementById("t").textContent = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    document.getElementById("d").textContent = (d.getMonth() + 1) + "月" + d.getDate() + "日 " + WEEK[d.getDay()];
+  }
+  /* ---- todo ---- */
+  var todo = [];
+  function renderTodo() {
+    var list = document.getElementById("todoList");
+    list.innerHTML = "";
+    todo.slice(0, 8).forEach(function (t, i) {
+      var item = document.createElement("div");
+      item.className = "todo-item" + (t.done ? " item-done" : "");
+      item.innerHTML = '<span class="tick"></span><span class="todo-text"></span>';
+      item.querySelector(".todo-text").textContent = t.text;
+      item.addEventListener("click", function () { todo[i].done = !todo[i].done; writeTodo(); renderTodo(); });
+      list.appendChild(item);
+    });
+    if (!todo.length) {
+      var e = document.createElement("div");
+      e.className = "todo-item"; e.style.color = "rgba(238,241,248,.4)";
+      e.textContent = "暂无待办，添加一条吧";
+      list.appendChild(e);
+    }
+  }
+  function writeTodo() {
+    var c = readCfg() || {};
+    c.privateContent = c.privateContent || {};
+    c.privateContent.todo = todo;
+    try { localStorage.setItem("aura-desk-cfg", JSON.stringify(c)); } catch (e) {}
+  }
+  function loadTodo() {
+    var p = priv();
+    todo = Array.isArray(p.todo) ? p.todo : [];
+    renderTodo();
+  }
+  document.getElementById("todoAdd").addEventListener("click", function () {
+    var inp = document.getElementById("todoIn");
+    var v = inp.value.trim();
+    if (!v) return;
+    todo.unshift({ text: v, done: false });
+    todo = todo.slice(0, 20);
+    inp.value = "";
+    writeTodo();
+    renderTodo();
+  });
+  document.getElementById("todoIn").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("todoAdd").click();
+  });
+  /* ---- note ---- */
+  var noteT = 0;
+  document.getElementById("noteArea").addEventListener("input", function () {
+    var v = document.getElementById("noteArea").value.slice(0, 400);
+    var c = readCfg() || {};
+    c.privateContent = c.privateContent || {};
+    c.privateContent.note = v;
+    try { localStorage.setItem("aura-desk-cfg", JSON.stringify(c)); } catch (e) {}
+    clearTimeout(noteT);
+    noteT = setTimeout(loadNote, 400);
+  });
+  function loadNote() {
+    document.getElementById("noteArea").value = String(priv().note || "");
+  }
+  /* ---- countdown ---- */
+  var cd = { title: "倒计时", date: "" };
+  function renderCd() {
+    var target = new Date(cd.date + "T00:00:00");
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    if (isNaN(target.getTime())) { document.getElementById("cdNum").textContent = "--"; document.getElementById("cdUnit").textContent = ""; document.getElementById("cdLabel").textContent = "设置日期"; return; }
+    var days = Math.round((target - today) / 86400000);
+    document.getElementById("cdLabel").textContent = cd.title + " · " + (target.getMonth() + 1) + "月" + target.getDate() + "日";
+    if (days > 0) { document.getElementById("cdNum").textContent = days; document.getElementById("cdUnit").textContent = "天后"; }
+    else if (days === 0) { document.getElementById("cdNum").textContent = "就是"; document.getElementById("cdUnit").textContent = "今天"; }
+    else { document.getElementById("cdNum").textContent = -days; document.getElementById("cdUnit").textContent = "天前"; }
+  }
+  document.getElementById("cdT").addEventListener("input", function () {
+    cd.title = document.getElementById("cdT").value.slice(0, 10) || "倒计时";
+    renderCd();
+  });
+  document.getElementById("cdD").addEventListener("change", function () {
+    if (document.getElementById("cdD").value) cd.date = document.getElementById("cdD").value;
+    renderCd();
+  });
+  /* ---- quotes ---- */
+  var qIdx = Math.floor(new Date().getTime() / 86400000) % QUOTES.length;
+  function renderQuote() {
+    document.getElementById("qText").textContent = "「" + QUOTES[qIdx].t + "」";
+    document.getElementById("qAuthor").textContent = "—— " + QUOTES[qIdx].a;
+  }
+  document.getElementById("qNext").addEventListener("click", function () {
+    qIdx = (qIdx + 1) % QUOTES.length;
+    renderQuote();
+  });
+  /* ---- drag ---- */
+  (function () {
+    var drag = null;
+    document.addEventListener("pointerdown", function (e) {
+      var title = e.target.closest(".ov-title");
+      if (!title) return;
+      var card = title.closest(".ov-card");
+      drag = { el: card, sx: e.clientX, sy: e.clientY, ox: parseFloat(card.style.left), oy: parseFloat(card.style.top) };
+      e.preventDefault();
+    });
+    document.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      drag.el.style.left = (drag.ox + e.clientX - drag.sx) + "px";
+      drag.el.style.top = Math.max(0, drag.oy + e.clientY - drag.sy) + "px";
+    });
+    document.addEventListener("pointerup", function () {
+      if (!drag) return;
+      localStorage.setItem("aura-overlay-pos", JSON.stringify((function () {
+        var all = {};
+        document.querySelectorAll(".ov-card").forEach(function (c) { all[c.id] = { left: c.style.left, top: c.style.top }; });
+        return all;
+      })()));
+      drag = null;
+    });
+    try {
+      var saved = JSON.parse(localStorage.getItem("aura-overlay-pos") || "null");
+      if (saved) Object.keys(saved).forEach(function (id) {
+        var c = document.getElementById(id);
+        if (c) { c.style.left = saved[id].left; c.style.top = saved[id].top; }
+      });
+    } catch (e) {}
+  })();
+  /* ---- click-through management ---- */
+  var ignoreT = 0;
+  document.addEventListener("mousemove", function (e) {
+    clearTimeout(ignoreT);
+    ignoreT = setTimeout(function () {
+      try {
+        window.aura.setIgnoreMouseEvents(!e.target.closest(".ov-card"), { forward: true });
+      } catch (err) {}
+    }, 60);
+  });
+  /* ---- cross-window sync + boot ---- */
+  window.addEventListener("storage", function (e) {
+    if (e.key === "aura-desk-cfg") { loadTodo(); loadNote(); }
+  });
+  (function boot() {
+    var p = priv();
+    if (p.countdown) cd = { title: p.countdown.title || "倒计时", date: p.countdown.date || "" };
+    if (cd.date) document.getElementById("cdD").value = cd.date;
+    loadTodo();
+    loadNote();
+    renderCd();
+    renderQuote();
+    tick();
+    setInterval(tick, 1000);
+    setInterval(loadTodo, 5000);
+  })();
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && window.aura) window.aura.hideOverlays();
+  });
+</script>
+</body>
+</html>
